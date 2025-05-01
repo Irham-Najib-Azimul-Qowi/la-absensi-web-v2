@@ -1,0 +1,14 @@
+{
+  "name": "la-absensi-web",
+  "version": "1.0.0",
+  "description": "Sistem Absensi berbasis Web dan MQTT",
+  "main": "index.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "mongodb": "^4.0.0"
+  },
+  "author": "AchmadAlvin",
+  "license": "ISC"
+}

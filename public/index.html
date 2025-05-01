@@ -1,0 +1,119 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Lintas Alam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistem Absensi Lintas Alam</h1>
+            <div id="status">Status MQTT: Terputus</div>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('attendance')">Absensi</button>
+            <button class="tab-button" onclick="openTab('control')">Kontrol</button>
+            <button class="tab-button" onclick="openTab('schedule')">Jadwal</button>
+            <button class="tab-button" onclick="openTab('log')">Log</button>
+        </div>
+
+        <!-- Tab Absensi -->
+        <div id="attendance" class="tab-content active">
+            <h2>Data Absensi</h2>
+            <div id="attendance-table"></div>
+        </div>
+
+        <!-- Tab Kontrol -->
+        <div id="control" class="tab-content">
+            <h2>Kontrol Perangkat</h2>
+            <div class="control-section">
+                <h3>Flash ESP32-CAM</h3>
+                <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
+                <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
+            </div>
+            <div class="control-section">
+                <h3>Pintu Manual</h3>
+                <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
+                <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
+            </div>
+            <div class="control-section">
+                <h3>OLED</h3>
+                <input type="text" id="oled-message" placeholder="Masukkan pesan">
+                <button onclick="sendOledMessage()">Kirim ke OLED</button>
+            </div>
+        </div>
+
+        <!-- Tab Jadwal -->
+        <div id="schedule" class="tab-content">
+            <h2>Jadwal Absensi</h2>
+            <div class="schedule-section">
+                <h3>Jadwal Mata Kuliah</h3>
+                <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
+                <input type="date" id="course-date">
+                <input type="time" id="course-start">
+                <input type="time" id="course-end">
+                <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
+            </div>
+            <div class="schedule-section">
+                <h3>Jadwal Perorangan</h3>
+                <input type="text" id="person-name" placeholder="Nama Orang">
+                <input type="date" id="person-date">
+                <input type="time" id="person-start">
+                <input type="time" id="person-end">
+                <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
+            </div>
+        </div>
+
+        <!-- Tab Log -->
+        <div id="log" class="tab-content">
+            <h2>Log Aktivitas</h2>
+            <div id="log-messages"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
