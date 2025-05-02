@@ -25,6 +25,7 @@ mqttClient.on('message', (topic, message) => {
         saveMessage(data);
         attendanceData.push(data);
         updateAttendanceTable();
+        updateDashboardChart();
     }
 });
 
@@ -58,6 +59,7 @@ function fetchMessages() {
                 course: msg.course
             }));
             updateAttendanceTable();
+            updateDashboardChart();
         })
         .catch(error => logMessage(`Error mengambil data: ${error}`));
 }
@@ -70,6 +72,36 @@ function updateAttendanceTable() {
     });
     html += '</table>';
     tableDiv.innerHTML = html;
+}
+
+function updateDashboardChart() {
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const present = attendanceData.filter(data => data.status === 'On Time' || data.status === 'Terlambat').length;
+    const absent = attendanceData.filter(data => data.status === 'Absen').length;
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Hadir', 'Tidak Hadir'],
+            datasets: [{
+                data: [present, absent],
+                backgroundColor: ['#2ecc71', '#e74c3c'],
+                borderColor: ['#fff', '#fff'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
 }
 
 function publishCommand(topic, message) {
