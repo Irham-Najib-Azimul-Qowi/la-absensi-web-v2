@@ -5,71 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Absensi Lintas Alam</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar">
+        <button class="active" onclick="openTab('attendance')">Absensi</button>
+        <button onclick="openTab('control')">Kontrol</button>
+        <button onclick="openTab('course-schedule')">Jadwal Kuliah</button>
+        <button onclick="openTab('individual-schedule')">Jadwal Individu</button>
+        <button onclick="openTab('log')">Log</button>
+    </div>
     <div class="container">
         <header>
-            <h1>Dashboard</h1>
-            <div class="user-info">Carter Lipshutz <span style="color: #28a745">SUPER ADMIN</span></div>
+            <h1>Sistem Absensi Lintas Alam</h1>
+            <div id="status">Status MQTT: Terputus</div>
         </header>
-        <div class="sidebar">
-            <ul>
-                <li class="active" onclick="openTab('dashboard')">Dashboard</li>
-                <li onclick="openTab('attendance')">Absensi</li>
-                <li onclick="openTab('schedule')">Jadwal</li>
-                <li onclick="openTab('control')">Kontrol</li>
-                <li onclick="openTab('log')">Log</li>
-            </ul>
+
+        <!-- Tab Absensi -->
+        <div id="attendance" class="tab-content active">
+            <h2>Data Absensi</h2>
+            <div id="attendance-table"></div>
         </div>
-        <div class="content">
-            <div class="tabs">
-                <button class="tab-button active" onclick="openTab('dashboard')">Dashboard</button>
-                <button class="tab-button" onclick="openTab('attendance')">Absensi</button>
-                <button class="tab-button" onclick="openTab('schedule')">Jadwal</button>
-                <button class="tab-button" onclick="openTab('control')">Kontrol</button>
-                <button class="tab-button" onclick="openTab('log')">Log</button>
+
+        <!-- Tab Kontrol -->
+        <div id="control" class="tab-content">
+            <h2>Kontrol Perangkat</h2>
+            <div class="control-section">
+                <h3>Flash ESP32-CAM</h3>
+                <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
+                <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
             </div>
-            <div id="dashboard" class="tab-content active">
-                <h2>Brionica</h2>
-                <p id="avg-cleaning-time">Avg. Body Cleaning Time: Last 30 Days until 18 January</p>
-                <div class="dashboard-section" id="employee-section"></div>
-                <div class="calendar">
-                    <h3>January 2019</h3>
-                    <table>
-                        <tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>
-                        <tr><td>30</td><td>31</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
-                        <tr><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td></tr>
-                        <tr><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td></tr>
-                        <tr><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td></tr>
-                        <tr><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td><td>1</td><td>2</td></tr>
-                    </table>
-                </div>
-                <h2>Body Cleaning Time During the Day: 18 January (Today)</h2>
-                <table class="details-table" id="details-table"></table>
-                <h2>Attendance Overview</h2>
-                <div id="pieChartContainer">
-                    <canvas id="pieChart"></canvas>
-                </div>
+            <div class="control-section">
+                <h3>Pintu Manual</h3>
+                <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
+                <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
             </div>
-            <div id="attendance" class="tab-content">
-                <h2>Data Absensi</h2>
-                <div id="attendance-table"></div>
+            <div class="control-section">
+                <h3>OLED</h3>
+                <input type="text" id="oled-message" placeholder="Masukkan pesan">
+                <button onclick="sendOledMessage()">Kirim ke OLED</button>
             </div>
-            <div id="control" class="tab-content">
-                <h2>Kontrol</h2>
-                <!-- Control content here -->
+        </div>
+
+        <!-- Tab Jadwal Kuliah -->
+        <div id="course-schedule" class="tab-content">
+            <h2>Jadwal Mata Kuliah</h2>
+            <div class="schedule-section">
+                <h3>Tambah Jadwal</h3>
+                <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
+                <input type="date" id="course-date">
+                <input type="time" id="course-start">
+                <input type="time" id="course-end">
+                <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
             </div>
-            <div id="schedule" class="tab-content">
-                <h2>Jadwal</h2>
-                <!-- Schedule content here -->
+            <div class="schedule-section">
+                <h3>Hapus Jadwal</h3>
+                <input type="text" id="delete-course-name" placeholder="Nama Mata Kuliah">
+                <input type="date" id="delete-course-date">
+                <button onclick="deleteCourseSchedule()">Hapus Jadwal</button>
             </div>
-            <div id="log" class="tab-content">
-                <h2>Log</h2>
-                <!-- Log content here -->
+        </div>
+
+        <!-- Tab Jadwal Individu -->
+        <div id="individual-schedule" class="tab-content">
+            <h2>Jadwal Perorangan</h2>
+            <div class="schedule-section">
+                <h3>Tambah Jadwal</h3>
+                <input type="text" id="person-name" placeholder="Nama Orang">
+                <input type="date" id="person-date">
+                <input type="time" id="person-start">
+                <input type="time" id="person-end">
+                <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
             </div>
+            <div class="schedule-section">
+                <h3>Hapus Jadwal</h3>
+                <input type="text" id="delete-person-name" placeholder="Nama Orang">
+                <input type="date" id="delete-person-date">
+                <button onclick="deleteIndividualSchedule()">Hapus Jadwal</button>
+            </div>
+        </div>
+
+        <!-- Tab Log -->
+        <div id="log" class="tab-content">
+            <h2>Log Aktivitas</h2>
+            <div id="log-messages"></div>
         </div>
     </div>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
