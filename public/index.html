@@ -5,90 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Absensi Lintas Alam</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar">
-        <button class="active" onclick="openTab('attendance')">Absensi</button>
-        <button onclick="openTab('control')">Kontrol</button>
-        <button onclick="openTab('course-schedule')">Jadwal Kuliah</button>
-        <button onclick="openTab('individual-schedule')">Jadwal Individu</button>
-        <button onclick="openTab('log')">Log</button>
+        <div class="sidebar-header">
+            <h2>Sistem Absensi</h2>
+            <button class="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <nav>
+            <button class="sidebar-button active" onclick="openTab('attendance')"><i class="fas fa-users"></i> Absensi</button>
+            <button class="sidebar-button" onclick="openTab('control')"><i class="fas fa-cog"></i> Kontrol</button>
+            <button class="sidebar-button" onclick="openTab('course-schedule')"><i class="fas fa-book"></i> Jadwal Mata Kuliah</button>
+            <button class="sidebar-button" onclick="openTab('individual-schedule')"><i class="fas fa-user-clock"></i> Jadwal Perorangan</button>
+            <button class="sidebar-button" onclick="openTab('log')"><i class="fas fa-file-alt"></i> Log</button>
+        </nav>
     </div>
-    <div class="container">
-        <header>
-            <h1>Sistem Absensi Lintas Alam</h1>
-            <div id="status">Status MQTT: Terputus</div>
-        </header>
+    
+    <div class="main-content">
+        <div class="container">
+            <header>
+                <h1>Sistem Absensi Lintas Alam</h1>
+                <div id="status">Status MQTT: Terputus</div>
+            </header>
 
-        <!-- Tab Absensi -->
-        <div id="attendance" class="tab-content active">
-            <h2>Data Absensi</h2>
-            <div id="attendance-table"></div>
-        </div>
+            <!-- Tab Absensi -->
+            <div id="attendance" class="tab-content active">
+                <h2>Data Absensi</h2>
+                <div id="attendance-table"></div>
+            </div>
 
-        <!-- Tab Kontrol -->
-        <div id="control" class="tab-content">
-            <h2>Kontrol Perangkat</h2>
-            <div class="control-section">
-                <h3>Flash ESP32-CAM</h3>
-                <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
-                <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
+            <!-- Tab Kontrol -->
+            <div id="control" class="tab-content">
+                <h2>Kontrol Perangkat</h2>
+                <div class="control-section">
+                    <h3>Flash ESP32-CAM</h3>
+                    <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
+                    <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
+                </div>
+                <div class="control-section">
+                    <h3>Pintu Manual</h3>
+                    <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
+                    <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
+                </div>
+                <div class="control-section">
+                    <h3>OLED</h3>
+                    <input type="text" id="oled-message" placeholder="Masukkan pesan">
+                    <button onclick="sendOledMessage()">Kirim ke OLED</button>
+                </div>
             </div>
-            <div class="control-section">
-                <h3>Pintu Manual</h3>
-                <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
-                <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
-            </div>
-            <div class="control-section">
-                <h3>OLED</h3>
-                <input type="text" id="oled-message" placeholder="Masukkan pesan">
-                <button onclick="sendOledMessage()">Kirim ke OLED</button>
-            </div>
-        </div>
 
-        <!-- Tab Jadwal Kuliah -->
-        <div id="course-schedule" class="tab-content">
-            <h2>Jadwal Mata Kuliah</h2>
-            <div class="schedule-section">
-                <h3>Tambah Jadwal</h3>
-                <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                <input type="date" id="course-date">
-                <input type="time" id="course-start">
-                <input type="time" id="course-end">
-                <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
+            <!-- Tab Jadwal Mata Kuliah -->
+            <div id="course-schedule" class="tab-content">
+                <h2>Jadwal Mata Kuliah</h2>
+                <div class="schedule-section">
+                    <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
+                    <input type="date" id="course-date">
+                    <input type="time" id="course-start">
+                    <input type="time" id="course-end">
+                    <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
+                    <button onclick="deleteCourseSchedule()">Hapus Jadwal</button>
+                </div>
             </div>
-            <div class="schedule-section">
-                <h3>Hapus Jadwal</h3>
-                <input type="text" id="delete-course-name" placeholder="Nama Mata Kuliah">
-                <input type="date" id="delete-course-date">
-                <button onclick="deleteCourseSchedule()">Hapus Jadwal</button>
-            </div>
-        </div>
 
-        <!-- Tab Jadwal Individu -->
-        <div id="individual-schedule" class="tab-content">
-            <h2>Jadwal Perorangan</h2>
-            <div class="schedule-section">
-                <h3>Tambah Jadwal</h3>
-                <input type="text" id="person-name" placeholder="Nama Orang">
-                <input type="date" id="person-date">
-                <input type="time" id="person-start">
-                <input type="time" id="person-end">
-                <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
+            <!-- Tab Jadwal Perorangan -->
+            <div id="individual-schedule" class="tab-content">
+                <h2>Jadwal Perorangan</h2>
+                <div class="schedule-section">
+                    <input type="text" id="person-name" placeholder="Nama Orang">
+                    <input type="date" id="person-date">
+                    <input type="time" id="person-start">
+                    <input type="time" id="person-end">
+                    <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
+                    <button onclick="deleteIndividualSchedule()">Hapus Jadwal</button>
+                </div>
             </div>
-            <div class="schedule-section">
-                <h3>Hapus Jadwal</h3>
-                <input type="text" id="delete-person-name" placeholder="Nama Orang">
-                <input type="date" id="delete-person-date">
-                <button onclick="deleteIndividualSchedule()">Hapus Jadwal</button>
-            </div>
-        </div>
 
-        <!-- Tab Log -->
-        <div id="log" class="tab-content">
-            <h2>Log Aktivitas</h2>
-            <div id="log-messages"></div>
+            <!-- Tab Log -->
+            <div id="log" class="tab-content">
+                <h2>Log Aktivitas</h2>
+                <div id="log-messages"></div>
+            </div>
         </div>
     </div>
 
