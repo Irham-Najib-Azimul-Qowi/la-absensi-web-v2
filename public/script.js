@@ -7,6 +7,7 @@ mqttClient.on('connect', () => {
     document.getElementById('status').style.color = '#2ecc71';
     mqttClient.subscribe('lintas_alam/detected_person');
     mqttClient.subscribe('lintas_alam/attendance_share');
+    mqttClient.subscribe('lintas_alam/dataset_names');
     logMessage('Terhubung ke MQTT Broker');
 });
 
@@ -20,12 +21,14 @@ mqttClient.on('message', (topic, message) => {
             name: msg.name,
             timestamp: msg.timestamp,
             status: status,
-            course: msg.course
+            course: msg.course || 'Tidak ada jadwal'
         };
         saveMessage(data);
         attendanceData.push(data);
         updateAttendanceTable();
-        updateDashboardChart();
+        updateDashboardGraph();
+    } else if (topic === 'lintas_alam/dataset_names') {
+        updateDashboardStats(msg.names);
     }
 });
 
@@ -56,10 +59,10 @@ function fetchMessages() {
                 name: msg.name,
                 timestamp: msg.timestamp,
                 status: msg.status,
-                course: msg.course
+                course: msg.course || 'Tidak ada jadwal'
             }));
             updateAttendanceTable();
-            updateDashboardChart();
+            updateDashboardGraph();
         })
         .catch(error => logMessage(`Error mengambil data: ${error}`));
 }
@@ -72,36 +75,6 @@ function updateAttendanceTable() {
     });
     html += '</table>';
     tableDiv.innerHTML = html;
-}
-
-function updateDashboardChart() {
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
-    const present = attendanceData.filter(data => data.status === 'On Time' || data.status === 'Terlambat').length;
-    const absent = attendanceData.filter(data => data.status === 'Absen').length;
-
-    new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Hadir', 'Tidak Hadir'],
-            datasets: [{
-                data: [present, absent],
-                backgroundColor: ['#2ecc71', '#e74c3c'],
-                borderColor: ['#fff', '#fff'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: '#fff'
-                    }
-                }
-            }
-        }
-    });
 }
 
 function publishCommand(topic, message) {
@@ -162,6 +135,40 @@ function openTab(tabId) {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
+    if (tabId === 'dashboard') {
+        fetchMessages();
+    }
+}
+
+function updateDashboardStats(names) {
+    const statsDiv = document.getElementById('dashboard-stats');
+    statsDiv.innerHTML = `
+        <div class="stat-card">Total Employees: ${names.length}</div>
+        <div class="stat-card">Avg Cleaning Time: 7.5 min</div>
+        <div class="stat-card">On Duty: 2</div>
+    `;
+}
+
+function updateDashboardGraph() {
+    const ctx = document.getElementById('attendance-graph').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: attendanceData.map(d => d.name),
+            datasets: [{
+                label: 'Cleaning Time (min)',
+                data: attendanceData.map(d => {
+                    const diff = new Date() - new Date(d.timestamp);
+                    return Math.min(diff / (1000 * 60), 15); // Cap at 15 min
+                }),
+                backgroundColor: 'rgba(26, 188, 156, 0.6)'
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 15 } },
+            plugins: { legend: { display: false } }
+        }
+    });
 }
 
 window.onload = () => {
