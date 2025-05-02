@@ -3,7 +3,7 @@ const apiUrl = 'https://la-absensi-web.vercel.app/api';
 let attendanceData = [];
 let studentList = [];
 let courses = new Set();
-let barChart, pieChart;
+let lineChart, pieChart, barChart;
 
 mqttClient.on('connect', () => {
     document.getElementById('status').innerText = 'Status MQTT: Terhubung';
@@ -25,7 +25,7 @@ mqttClient.on('message', (topic, message) => {
         const now = new Date();
         const data = {
             name: msg.name,
-            timestamp: msg.timestamp,
+            timestamp: now.toLocaleString(),
             status: 'Hadir',
             course: msg.course || 'Tidak ada jadwal'
         };
@@ -103,8 +103,12 @@ function updateAttendanceTable() {
 
 function updateDashboard() {
     updateCourseSelect();
-    updateBarChart();
+    updateTotalAttendance();
+    updateLineChart();
     updatePieChart();
+    updateBarChart();
+    updateCourseSummary();
+    updateRecentLogs();
 }
 
 function updateCourseSelect() {
@@ -120,30 +124,31 @@ function updateCourseSelect() {
     });
 }
 
-function updateBarChart() {
-    const ctx = document.getElementById('attendanceBarChart').getContext('2d');
-    const courseAttendance = {};
-    
-    courses.forEach(course => {
-        if (course !== 'Tidak ada jadwal') {
-            courseAttendance[course] = attendanceData.filter(data => data.course === course).length;
-        }
-    });
+function updateTotalAttendance() {
+    const total = attendanceData.length;
+    document.getElementById('total-attendance-value').textContent = `${total} Mahasiswa`;
+}
 
-    if (barChart) {
-        barChart.destroy();
+function updateLineChart() {
+    const ctx = document.getElementById('attendanceLineChart').getContext('2d');
+    const timestamps = [...new Set(attendanceData.map(data => data.timestamp))].sort();
+    const attendanceCount = timestamps.map(t => attendanceData.filter(data => data.timestamp === t).length);
+
+    if (lineChart) {
+        lineChart.destroy();
     }
 
-    barChart = new Chart(ctx, {
-        type: 'bar',
+    lineChart = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: Object.keys(courseAttendance),
+            labels: timestamps,
             datasets: [{
-                label: 'Jumlah Mahasiswa Hadir',
-                data: Object.values(courseAttendance),
-                backgroundColor: '#526D82',
-                borderColor: '#9DB2BF',
-                borderWidth: 1
+                label: 'Jumlah Hadir',
+                data: attendanceCount,
+                borderColor: '#2ecc71',
+                backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                borderWidth: 2,
+                fill: true
             }]
         },
         options: {
@@ -188,7 +193,7 @@ function updatePieChart() {
             labels: ['Hadir', 'Belum Hadir'],
             datasets: [{
                 data: [present, absent],
-                backgroundColor: ['#526D82', '#9DB2BF'],
+                backgroundColor: ['#2ecc71', '#9DB2BF'],
                 borderColor: '#DDE6ED',
                 borderWidth: 1
             }]
@@ -198,6 +203,75 @@ function updatePieChart() {
                 legend: { labels: { color: '#DDE6ED' } }
             }
         }
+    });
+}
+
+function updateBarChart() {
+    const ctx = document.getElementById('attendanceBarChart').getContext('2d');
+    const courseAttendance = {};
+    
+    courses.forEach(course => {
+        if (course !== 'Tidak ada jadwal') {
+            courseAttendance[course] = attendanceData.filter(data => data.course === course).length;
+        }
+    });
+
+    if (barChart) {
+        barChart.destroy();
+    }
+
+    barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(courseAttendance),
+            datasets: [{
+                label: 'Jumlah Mahasiswa Hadir',
+                data: Object.values(courseAttendance),
+                backgroundColor: '#2ecc71',
+                borderColor: '#27ae60',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#DDE6ED' },
+                    grid: { color: '#526D82' }
+                },
+                x: {
+                    ticks: { color: '#DDE6ED' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#DDE6ED' } }
+            }
+        }
+    });
+}
+
+function updateCourseSummary() {
+    const summaryDiv = document.getElementById('course-summary');
+    summaryDiv.innerHTML = '';
+    courses.forEach(course => {
+        if (course !== 'Tidak ada jadwal') {
+            const count = attendanceData.filter(data => data.course === course).length;
+            const p = document.createElement('p');
+            p.textContent = `${course}: ${count} Hadir`;
+            summaryDiv.appendChild(p);
+        }
+    });
+}
+
+function updateRecentLogs() {
+    const logsDiv = document.getElementById('recent-logs');
+    logsDiv.innerHTML = '';
+    const recent = attendanceData.slice(0, 5).map(data => `${data.name} - ${data.timestamp} (${data.course})`).reverse();
+    recent.forEach(log => {
+        const p = document.createElement('p');
+        p.textContent = log;
+        logsDiv.appendChild(p);
     });
 }
 
@@ -275,7 +349,7 @@ function uploadDataset() {
         reader.onload = () => {
             const payload = {
                 studentName: studentName,
-                image: reader.result.split(',')[1], // Remove data:image/jpeg;base64,
+                image: reader.result.split(',')[1],
                 fileName: `${studentName}_${index + 1}.jpg`
             };
             publishCommand('lintas_alam/dataset_upload', JSON.stringify(payload));
@@ -288,7 +362,7 @@ function uploadDataset() {
 function logMessage(message) {
     const logDiv = document.getElementById('log-messages');
     const p = document.createElement('p');
-    p.innerText = `[${new Date().toLocaleString()}] ${message}`;
+    p.textContent = `[${new Date().toLocaleString()}] ${message}`;
     logDiv.appendChild(p);
     logDiv.scrollTop = logDiv.scrollHeight;
 }
@@ -298,6 +372,7 @@ function openTab(tabId) {
     document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
+    if (tabId === 'dashboard') updateDashboard();
 }
 
 document.querySelector('.toggle-sidebar').addEventListener('click', () => {
