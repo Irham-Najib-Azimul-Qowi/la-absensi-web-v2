@@ -1,75 +1,90 @@
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #FBE4D6, #261FB3);
+    background: #27374D;
     margin: 0;
     padding: 0;
-    color: #0C0950;
-}
-
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    margin-left: 250px; /* Adjust for sidebar */
-    transition: margin-left 0.3s;
-}
-
-.container.sidebar-hidden {
-    margin-left: 20px;
+    color: #DDE6ED;
 }
 
 .sidebar {
-    width: 230px;
-    background: #161179;
+    width: 250px;
+    background: #526D82;
     height: 100vh;
     position: fixed;
-    top: 0;
     left: 0;
-    padding: 20px;
-    transition: transform 0.3s;
-    transform: translateX(0);
+    top: 0;
+    transition: transform 0.3s ease;
 }
 
 .sidebar.hidden {
     transform: translateX(-250px);
 }
 
-.sidebar-toggle {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    background: #261FB3;
-    color: #FBE4D6;
+.main-content {
+    margin-left: 250px;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+.main-content.full {
+    margin-left: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #27374D;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    color: #DDE6ED;
+    font-size: 1.5em;
+}
+
+.toggle-sidebar {
+    background: none;
     border: none;
-    padding: 10px;
-    border-radius: 5px;
+    color: #DDE6ED;
+    font-size: 1.2em;
     cursor: pointer;
-    z-index: 1000;
 }
 
-.sidebar-toggle:hover {
-    background: #0C0950;
+.sidebar nav {
+    padding: 10px 0;
 }
 
-.sidebar button {
-    display: block;
+.sidebar-button {
+    display: flex;
+    align-items: center;
     width: 100%;
-    padding: 10px;
-    margin: 5px 0;
+    padding: 15px 20px;
     border: none;
-    background: #261FB3;
-    color: #FBE4D6;
-    cursor: pointer;
-    border-radius: 10px;
+    background: none;
+    color: #DDE6ED;
     text-align: left;
+    cursor: pointer;
     transition: background 0.3s;
 }
 
-.sidebar button:hover, .sidebar button.active {
-    background: #0C0950;
+.sidebar-button i {
+    margin-right: 10px;
+}
+
+.sidebar-button:hover, .sidebar-button.active {
+    background: #9DB2BF;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #DDE6ED;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    color: #27374D;
 }
 
 header {
@@ -78,7 +93,7 @@ header {
 }
 
 h1 {
-    color: #161179;
+    color: #27374D;
     font-size: 2.5em;
     margin: 0;
 }
@@ -98,17 +113,17 @@ h1 {
 }
 
 h2 {
-    color: #261FB3;
-    border-bottom: 2px solid #0C0950;
+    color: #526D82;
+    border-bottom: 2px solid #9DB2BF;
     padding-bottom: 5px;
 }
 
 #attendance-table, #log-messages {
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid #FBE4D6;
+    border: 1px solid #9DB2BF;
     padding: 10px;
-    background: #FBE4D6;
+    background: #fff;
     border-radius: 10px;
 }
 
@@ -120,56 +135,233 @@ table {
 th, td {
     padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #FBE4D6;
+    border-bottom: 1px solid #eee;
 }
 
 th {
-    background: #261FB3;
-    color: #FBE4D6;
+    background: #526D82;
+    color: #DDE6ED;
 }
 
 .control-section, .schedule-section {
     margin: 20px 0;
     padding: 15px;
-    background: #FBE4D6;
+    background: #fff;
     border-radius: 10px;
 }
 
 button {
     padding: 10px 20px;
-    background: #161179;
-    color: #FBE4D6;
+    background: #9DB2BF;
+    color: #27374D;
     border: none;
-    border-radius: 10px;
+    border-radius: 25px;
     cursor: pointer;
     transition: background 0.3s;
 }
 
 button:hover {
-    background: #0C0950;
+    background: #526D82;
+    color: #DDE6ED;
 }
 
-input, select {
+input {
     padding: 8px;
     margin: 5px;
-    border: 1px solid #FBE4D6;
+    border: 1px solid #9DB2BF;
     border-radius: 5px;
     width: calc(100% - 20px);
     max-width: 200px;
 }
 
 @media (max-width: 600px) {
-    .container {
-        margin-left: 20px;
-    }
     .sidebar {
         width: 200px;
     }
-    .sidebar-toggle {
-        display: block;
+    .main-content {
+        margin-left: 200px;
     }
-    input, button, select {
+    .main-content.full {
+        margin-left: 0;
+    }
+    input, button {
         width: 100%;
         max-width: none;
     }
 }
+</xai Artifact>
+
+<xaiArtifact artifact_id="a133a72b-f9de-4991-a77f-039cdb6d7ccb" artifact_version_id="5a066868-b5f5-4936-8862-2c4458f83b6f" title="script.js" contentType="text/javascript">
+const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+const apiUrl = 'https://la-absensi-web.vercel.app/api';
+let attendanceData = [];
+let studentData = [];
+
+mqttClient.on('connect', () => {
+    document.getElementById('status').innerText = 'Status MQTT: Terhubung';
+    document.getElementById('status').style.color = '#2ecc71';
+    mqttClient.subscribe('lintas_alam/detected_person');
+    mqttClient.subscribe('lintas_alam/attendance_share');
+    logMessage('Terhubung ke MQTT Broker');
+    initializeStudentData();
+});
+
+mqttClient.on('message', (topic, message) => {
+    const msg = JSON.parse(message.toString());
+    logMessage(`Pesan diterima - Topic: ${topic}, Data: ${JSON.stringify(msg)}`);
+    if (topic === 'lintas_alam/detected_person' || topic === 'lintas_alam/attendance_share') {
+        const now = new Date();
+        const data = {
+            name: msg.name,
+            timestamp: msg.timestamp,
+            status: 'Hadir',
+            course: msg.course
+        };
+        saveMessage(data);
+        updateAttendanceRecord(data);
+        updateAttendanceTable();
+    }
+});
+
+function initializeStudentData() {
+    fetch(`${apiUrl}/get-students`)
+        .then(response => response.json())
+        .then(students => {
+            studentData = students.map((student, index) => ({
+                no: index + 1,
+                name: student.name,
+                timestamp: '',
+                status: 'Belum Hadir'
+            }));
+            updateAttendanceTable();
+        })
+        .catch(error => logMessage(`Error mengambil data mahasiswa: ${error}`));
+}
+
+function updateAttendanceRecord(newData) {
+    const existingIndex = studentData.findIndex(student => student.name === newData.name);
+    if (existingIndex !== -1) {
+        studentData[existingIndex] = {
+            ...studentData[existingIndex],
+            timestamp: newData.timestamp,
+            status: 'Hadir'
+        };
+        // Move to top
+        const [record] = studentData.splice(existingIndex, 1);
+        studentData.unshift(record);
+        // Update numbers
+        studentData.forEach((student, index) => {
+            student.no = index + 1;
+        });
+    }
+}
+
+function saveMessage(data) {
+    fetch(`${apiUrl}/save-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => logMessage(`Data disimpan: ${JSON.stringify(result)}`))
+    .catch(error => logMessage(`Error menyimpan data: ${error}`));
+}
+
+function updateAttendanceTable() {
+    const tableDiv = document.getElementById('attendance-table');
+    let html = '<table><tr><th>No</th><th>Nama</th><th>Waktu</th><th>Status</th></tr>';
+    studentData.forEach(data => {
+        html += `<tr><td>${data.no}</td><td>${data.name}</td><td>${data.timestamp}</td><td>${data.status}</td></tr>`;
+    });
+    html += '</table>';
+    tableDiv.innerHTML = html;
+}
+
+function publishCommand(topic, message) {
+    mqttClient.publish(topic, message);
+    logMessage(`Perintah dikirim - Topic: ${topic}, Pesan: ${message}`);
+}
+
+function sendOledMessage() {
+    const message = document.getElementById('oled-message').value;
+    if (message) {
+        publishCommand('lintas_alam/oled', message);
+        document.getElementById('oled-message').value = '';
+    } else {
+        logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
+    }
+}
+
+function saveCourseSchedule() {
+    const course = document.getElementById('course-name').value;
+    const date = document.getElementById('course-date').value;
+    const start = document.getElementById('course-start').value;
+    const end = document.getElementById('course-end').value;
+    if (course && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { course, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal mata kuliah!');
+    }
+}
+
+function deleteCourseSchedule() {
+    const course = document.getElementById('course-name').value;
+    if (course) {
+        publishCommand('lintas_alam/schedule/delete', JSON.stringify({ course }));
+        logMessage('Jadwal mata kuliah dihapus');
+    } else {
+        logMessage('Masukkan nama mata kuliah untuk dihapus!');
+    }
+}
+
+function saveIndividualSchedule() {
+    const person = document.getElementById('person-name').value;
+    const date = document.getElementById('person-date').value;
+    const start = document.getElementById('person-start').value;
+    const end = document.getElementById('person-end').value;
+    if (person && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { person, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal perorangan!');
+    }
+}
+
+function deleteIndividualSchedule() {
+    const person = document.getElementById('person-name').value;
+    if (person) {
+        publishCommand('lintas_alam/schedule/delete', JSON.stringify({ person }));
+        logMessage('Jadwal perorangan dihapus');
+    } else {
+        logMessage('Masukkan nama orang untuk dihapus!');
+    }
+}
+
+function logMessage(message) {
+    const logDiv = document.getElementById('log-messages');
+    const p = document.createElement('p');
+    p.innerText = `[${new Date().toLocaleString()}] ${message}`;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function openTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
+}
+
+document.querySelector('.toggle-sidebar').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('hidden');
+    document.querySelector('.main-content').classList.toggle('full');
+});
+
+window.onload = () => {
+    initializeStudentData();
+};
