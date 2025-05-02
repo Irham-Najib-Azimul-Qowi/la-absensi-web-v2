@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -53,14 +14,21 @@
         </header>
         
         <div class="tabs">
-            <button class="tab-button active" onclick="openTab('attendance')">Absensi</button>
+            <button class="tab-button active" onclick="openTab('dashboard')">Dashboard</button>
+            <button class="tab-button" onclick="openTab('attendance')">Absensi</button>
             <button class="tab-button" onclick="openTab('control')">Kontrol</button>
             <button class="tab-button" onclick="openTab('schedule')">Jadwal</button>
             <button class="tab-button" onclick="openTab('log')">Log</button>
         </div>
 
+        <!-- Tab Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <h2>Dashboard Absensi</h2>
+            <canvas id="attendanceChart" width="400" height="400"></canvas>
+        </div>
+
         <!-- Tab Absensi -->
-        <div id="attendance" class="tab-content active">
+        <div id="attendance" class="tab-content">
             <h2>Data Absensi</h2>
             <div id="attendance-table"></div>
         </div>
@@ -83,6 +51,10 @@
                 <input type="text" id="oled-message" placeholder="Masukkan pesan">
                 <button onclick="sendOledMessage()">Kirim ke OLED</button>
             </div>
+            <div class="control-section">
+                <h3>Ultrasonik</h3>
+                <button onclick="publishCommand('lintas_alam/ultrasonic', 'TRIGGER')">Trigger Ultrasonik</button>
+            </div>
         </div>
 
         <!-- Tab Jadwal -->
@@ -100,7 +72,8 @@
                 <h3>Jadwal Perorangan</h3>
                 <input type="text" id="person-name" placeholder="Nama Orang">
                 <input type="date" id="person-date">
-                <input type="time" id="person-start">
+                <input type="time" id=" adore
+person-start">
                 <input type="time" id="person-end">
                 <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
             </div>
@@ -114,6 +87,7 @@
     </div>
 
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
