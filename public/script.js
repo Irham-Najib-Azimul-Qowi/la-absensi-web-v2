@@ -1,121 +1,194 @@
-const apiUrl = 'https://your-api-endpoint.com/api';
+const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+const apiUrl = 'https://la-absensi-web.vercel.app/api';
 let attendanceData = [];
-let totalStudents = 0;
+let studentData = [
+    { id: 1, name: "Ali", course: "Matematika" },
+    { id: 2, name: "Budi", course: "Fisika" },
+    { id: 3, name: "Cindy", course: "Kimia" },
+    { id: 4, name: "Dewi", course: "Biologi" },
+    { id: 5, name: "Eko", course: "Matematika" }
+];
 
-function fetchAttendanceData() {
-    fetch(`${apiUrl}/attendance`)
+mqttClient.on('connect', () => {
+    document.getElementById('status').innerText = 'Status MQTT: Terhubung';
+    document.getElementById('status').style.color = '#2ecc71';
+    mqttClient.subscribe('lintas_alam/detected_person');
+    mqttClient.subscribe('lintas_alam/attendance_share');
+    logMessage('Terhubung ke MQTT Broker');
+    initializeAttendanceTable();
+});
+
+mqttClient.on('message', (topic, message) => {
+    const msg = JSON.parse(message.toString());
+    logMessage(`Pesan diterima - Topic: ${topic}, Data: ${JSON.stringify(msg)}`);
+    if (topic === 'lintas_alam/detected_person' || topic === 'lintas_alam/attendance_share') {
+        const now = new Date();
+        const status = calculateStatus(now, msg.timestamp);
+        const data = {
+            id: studentData.find(s => s.name === msg.name)?.id || 0,
+            name: msg.name,
+            timestamp: msg.timestamp,
+            status: status,
+            course: msg.course
+        };
+        saveMessage(data);
+        attendanceData.push(data);
+        updateAttendanceTable();
+    }
+});
+
+function calculateStatus(currentTime, timestamp) {
+    const detectionTime = new Date(timestamp);
+    const diffMinutes = (currentTime - detectionTime) / (1000 * 60);
+    return diffMinutes <= 15 ? 'Hadir' : 'Belum Hadir';
+}
+
+function saveMessage(data) {
+    fetch(`${apiUrl}/save-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => logMessage(`Data disimpan: ${JSON.stringify(result)}`))
+    .catch(error => logMessage(`Error menyimpan data: ${error}`));
+}
+
+function fetchMessages() {
+    fetch(`${apiUrl}/get-messages`)
         .then(response => response.json())
-        .then(data => {
-            attendanceData = data;
-            totalStudents = new Set(attendanceData.map(entry => entry.name)).size; // Total unique students
-            updateDashboard();
-            updatePieChart();
+        .then(messages => {
+            attendanceData = messages.map(msg => ({
+                id: studentData.find(s => s.name === msg.name)?.id || 0,
+                name: msg.name,
+                timestamp: msg.timestamp,
+                status: msg.status,
+                course: msg.course
+            }));
+            updateAttendanceTable();
         })
-        .catch(error => console.error('Error fetching attendance data:', error));
+        .catch(error => logMessage(`Error mengambil data: ${error}`));
 }
 
-function updateDashboard() {
-    const avgCleaningTime = document.getElementById('avg-cleaning-time');
-    const employeeSection = document.getElementById('employee-section');
-    const detailsTable = document.getElementById('details-table');
-
-    avgCleaningTime.textContent = `Avg. Body Cleaning Time: Last 30 Days until 18 January: ${calculateAverageTime()} min`;
-
-    employeeSection.innerHTML = '';
-    const employees = attendanceData.slice(0, 6).map((emp, index) => ({
-        name: emp.name,
-        time: emp.time,
-        image: `employee${index + 1}.jpg`
-    }));
-    employees.forEach(emp => {
-        employeeSection.innerHTML += `
-            <div class="employee-card">
-                <img src="${emp.image}" alt="${emp.name}">
-                <p>${emp.name}</p>
-                <p>${emp.time} min</p>
-            </div>
-        `;
-    });
-
-    detailsTable.innerHTML = `
-        <tr>
-            <th>Employee</th>
-            <th>Entered Shower</th>
-            <th>Left Shower</th>
-            <th>Cleaning Time</th>
-            <th>Shower Quality</th>
-        </tr>
-    `;
-    attendanceData.forEach(entry => {
-        detailsTable.innerHTML += `
-            <tr>
-                <td>${entry.name}</td>
-                <td>${entry.entered}</td>
-                <td>${entry.left}</td>
-                <td>${entry.time} min</td>
-                <td><div class="progress-bar"><div class="progress" style="width: ${entry.quality}%">${entry.quality}</div></div></td>
-            </tr>
-        `;
-    });
-}
-
-function calculateAverageTime() {
-    const totalTime = attendanceData.reduce((sum, entry) => sum + parseFloat(entry.time), 0);
-    return (totalTime / attendanceData.length).toFixed(1) || '0';
-}
-
-function updatePieChart() {
-    const ctx = document.getElementById('pieChart').getContext('2d');
-    if (window.myPieChart) window.myPieChart.destroy();
-
-    const presentCount = attendanceData.filter(e => e.status === 'Hadir').length;
-    const absentCount = totalStudents - presentCount;
-
-    const labels = ['Present', 'Absent'];
-    const data = {
-        labels: labels,
-        datasets: [{
-            data: [presentCount, absentCount],
-            backgroundColor: ['#28a745', '#dc3545']
-        }]
-    };
-
-    window.myPieChart = new Chart(ctx, {
-        type: 'pie',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            const dataset = tooltipItem.dataset;
-                            const total = dataset.data.reduce((sum, val) => sum + val, 0);
-                            const value = dataset.data[tooltipItem.dataIndex];
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${tooltipItem.label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
+function initializeAttendanceTable() {
+    studentData.forEach(student => {
+        if (!attendanceData.some(data => data.name === student.name)) {
+            attendanceData.push({
+                id: student.id,
+                name: student.name,
+                timestamp: '-',
+                status: 'Belum Hadir',
+                course: student.course
+            });
         }
     });
+    updateAttendanceTable();
+}
+
+function updateAttendanceTable() {
+    const tableDiv = document.getElementById('attendance-table');
+    let html = '<table><tr><th>Nomor</th><th>Nama</th><th>Waktu</th><th>Status</th></tr>';
+    const sortedData = [...attendanceData].sort((a, b) => {
+        if (a.status === 'Hadir' && b.status !== 'Hadir') return -1;
+        if (a.status !== 'Hadir' && b.status === 'Hadir') return 1;
+        return 0;
+    });
+    sortedData.forEach((data, index) => {
+        html += `<tr><td>${index + 1}</td><td>${data.name}</td><td>${data.timestamp}</td><td>${data.status}</td></tr>`;
+    });
+    html += '</table>';
+    tableDiv.innerHTML = html;
+}
+
+function publishCommand(topic, message) {
+    mqttClient.publish(topic, message);
+    logMessage(`Perintah dikirim - Topic: ${topic}, Pesan: ${message}`);
+}
+
+function sendOledMessage() {
+    const message = document.getElementById('oled-message').value;
+    if (message) {
+        publishCommand('lintas_alam/oled', message);
+        document.getElementById('oled-message').value = '';
+    } else {
+        logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
+    }
+}
+
+function saveCourseSchedule() {
+    const course = document.getElementById('course-name').value;
+    const date = document.getElementById('course-date').value;
+    const start = document.getElementById('course-start').value;
+    const end = document.getElementById('course-end').value;
+    if (course && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { course, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal mata kuliah!');
+    }
+}
+
+function saveIndividualSchedule() {
+    const person = document.getElementById('person-name').value;
+    const date = document.getElementById('person-date').value;
+    const start = document.getElementById('person-start').value;
+    const end = document.getElementById('person-end').value;
+    if (person && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { person, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal perorangan!');
+    }
+}
+
+function deleteCourseSchedule() {
+    const course = document.getElementById('delete-course-name').value;
+    const date = document.getElementById('delete-course-date').value;
+    if (course && date) {
+        const payload = { course, date, action: 'delete' };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi field untuk menghapus jadwal mata kuliah!');
+    }
+}
+
+function deleteIndividualSchedule() {
+    const person = document.getElementById('delete-person-name').value;
+    const date = document.getElementById('delete-person-date').value;
+    if (person && date) {
+        const payload = { person, date, action: 'delete' };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi field untuk menghapus jadwal perorangan!');
+    }
+}
+
+function logMessage(message) {
+    const logDiv = document.getElementById('log-messages');
+    const p = document.createElement('p');
+    p.innerText = `[${new Date().toLocaleString()}] ${message}`;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
 }
 
 function openTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.sidebar ul li').forEach(li => li.classList.remove('active'));
+    document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
-    document.querySelector(`.sidebar ul li[onclick="openTab('${tabId}')"]`).classList.add('active');
+}
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const container = document.querySelector('.container');
+    sidebar.classList.toggle('hidden');
+    container.classList.toggle('sidebar-hidden');
 }
 
 window.onload = () => {
-    fetchAttendanceData();
-    setInterval(fetchAttendanceData, 60000);
+    fetchMessages();
 };
