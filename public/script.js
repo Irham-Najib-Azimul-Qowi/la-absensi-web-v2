@@ -1,46 +1,44 @@
 const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 const apiUrl = 'https://la-absensi-web.vercel.app/api';
 let attendanceData = [];
-let studentData = [
-    { id: 1, name: "Ali", course: "Matematika" },
-    { id: 2, name: "Budi", course: "Fisika" },
-    { id: 3, name: "Cindy", course: "Kimia" },
-    { id: 4, name: "Dewi", course: "Biologi" },
-    { id: 5, name: "Eko", course: "Matematika" }
-];
+let studentList = [];
 
 mqttClient.on('connect', () => {
     document.getElementById('status').innerText = 'Status MQTT: Terhubung';
     document.getElementById('status').style.color = '#2ecc71';
     mqttClient.subscribe('lintas_alam/detected_person');
     mqttClient.subscribe('lintas_alam/attendance_share');
+    mqttClient.subscribe('lintas_alam/dataset_names');
     logMessage('Terhubung ke MQTT Broker');
-    initializeAttendanceTable();
 });
 
 mqttClient.on('message', (topic, message) => {
     const msg = JSON.parse(message.toString());
     logMessage(`Pesan diterima - Topic: ${topic}, Data: ${JSON.stringify(msg)}`);
-    if (topic === 'lintas_alam/detected_person' || topic === 'lintas_alam/attendance_share') {
+    
+    if (topic === 'lintas_alam/dataset_names') {
+        studentList = msg.names || [];
+        updateAttendanceTable();
+    } else if (topic === 'lintas_alam/detected_person' || topic === 'lintas_alam/attendance_share') {
         const now = new Date();
-        const status = calculateStatus(now, msg.timestamp);
         const data = {
-            id: studentData.find(s => s.name === msg.name)?.id || 0,
             name: msg.name,
             timestamp: msg.timestamp,
-            status: status,
+            status: 'Hadir',
             course: msg.course
         };
         saveMessage(data);
-        attendanceData.push(data);
+        const existingIndex = attendanceData.findIndex(item => item.name === msg.name);
+        if (existingIndex !== -1) {
+            attendanceData.splice(existingIndex, 1);
+        }
+        attendanceData.unshift(data);
         updateAttendanceTable();
     }
 });
 
-function calculateStatus(currentTime, timestamp) {
-    const detectionTime = new Date(timestamp);
-    const diffMinutes = (currentTime - detectionTime) / (1000 * 60);
-    return diffMinutes <= 15 ? 'Hadir' : 'Belum Hadir';
+function calculateStatus(timestamp) {
+    return timestamp ? 'Hadir' : 'Belum Hadir';
 }
 
 function saveMessage(data) {
@@ -59,10 +57,9 @@ function fetchMessages() {
         .then(response => response.json())
         .then(messages => {
             attendanceData = messages.map(msg => ({
-                id: studentData.find(s => s.name === msg.name)?.id || 0,
                 name: msg.name,
                 timestamp: msg.timestamp,
-                status: msg.status,
+                status: 'Hadir',
                 course: msg.course
             }));
             updateAttendanceTable();
@@ -70,32 +67,34 @@ function fetchMessages() {
         .catch(error => logMessage(`Error mengambil data: ${error}`));
 }
 
-function initializeAttendanceTable() {
-    studentData.forEach(student => {
-        if (!attendanceData.some(data => data.name === student.name)) {
-            attendanceData.push({
-                id: student.id,
-                name: student.name,
-                timestamp: '-',
-                status: 'Belum Hadir',
-                course: student.course
-            });
-        }
-    });
-    updateAttendanceTable();
-}
-
 function updateAttendanceTable() {
     const tableDiv = document.getElementById('attendance-table');
-    let html = '<table><tr><th>Nomor</th><th>Nama</th><th>Waktu</th><th>Status</th></tr>';
-    const sortedData = [...attendanceData].sort((a, b) => {
-        if (a.status === 'Hadir' && b.status !== 'Hadir') return -1;
-        if (a.status !== 'Hadir' && b.status === 'Hadir') return 1;
-        return 0;
+    let html = '<table><tr><th>No</th><th>Nama</th><th>Waktu</th><th>Status</th><th>Mata Kuliah</th></tr>';
+    
+    const attendedStudents = attendanceData.map((data, index) => ({
+        no: index + 1,
+        name: data.name,
+        timestamp: data.timestamp,
+        status: data.status,
+        course: data.course
+    }));
+
+    const unattendedStudents = studentList
+        .filter(name => !attendanceData.some(data => data.name === name))
+        .map((name, index) => ({
+            no: attendedStudents.length + index + 1,
+            name: name,
+            timestamp: '-',
+            status: 'Belum Hadir',
+            course: '-'
+        }));
+
+    const allStudents = [...attendedStudents, ...unattendedStudents];
+
+    allStudents.forEach(data => {
+        html += `<tr><td>${data.no}</td><td>${data.name}</td><td>${data.timestamp}</td><td>${data.status}</td><td>${data.course}</td></tr>`;
     });
-    sortedData.forEach((data, index) => {
-        html += `<tr><td>${index + 1}</td><td>${data.name}</td><td>${data.timestamp}</td><td>${data.status}</td></tr>`;
-    });
+
     html += '</table>';
     tableDiv.innerHTML = html;
 }
@@ -130,6 +129,11 @@ function saveCourseSchedule() {
     }
 }
 
+function deleteCourseSchedule() {
+    publishCommand('lintas_alam/schedule', JSON.stringify({ course: 'delete' }));
+    logMessage('Jadwal mata kuliah dihapus');
+}
+
 function saveIndividualSchedule() {
     const person = document.getElementById('person-name').value;
     const date = document.getElementById('person-date').value;
@@ -145,25 +149,13 @@ function saveIndividualSchedule() {
     }
 }
 
-function deleteCourseSchedule() {
-    const course = document.getElementById('delete-course-name').value;
-    const date = document.getElementById('delete-course-date').value;
-    if (course && date) {
-        const payload = { course, date, action: 'delete' };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
-    } else {
-        logMessage('Lengkapi field untuk menghapus jadwal mata kuliah!');
-    }
-}
-
 function deleteIndividualSchedule() {
     const person = document.getElementById('delete-person-name').value;
-    const date = document.getElementById('delete-person-date').value;
-    if (person && date) {
-        const payload = { person, date, action: 'delete' };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    if (person) {
+        publishCommand('lintas_alam/schedule', JSON.stringify({ person: 'delete', name: person }));
+        logMessage(`Jadwal perorangan untuk ${person} dihapus`);
     } else {
-        logMessage('Lengkapi field untuk menghapus jadwal perorangan!');
+        logMessage('Masukkan nama untuk menghapus jadwal perorangan!');
     }
 }
 
@@ -177,17 +169,15 @@ function logMessage(message) {
 
 function openTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
 }
 
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const container = document.querySelector('.container');
-    sidebar.classList.toggle('hidden');
-    container.classList.toggle('sidebar-hidden');
-}
+document.querySelector('.toggle-sidebar').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('collapsed');
+    document.querySelector('.main-content').classList.toggle('collapsed');
+});
 
 window.onload = () => {
     fetchMessages();
