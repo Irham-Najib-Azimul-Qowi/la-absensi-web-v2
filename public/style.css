@@ -1,18 +1,18 @@
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #1e1e2e;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #74ebd5, #acb6e5);
     margin: 0;
     padding: 20px;
-    color: #e0e0e0;
+    color: #333;
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
-    background: #2a2a3c;
+    background: #fff;
     padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 header {
@@ -21,14 +21,14 @@ header {
 }
 
 h1 {
-    color: #ffffff;
-    font-size: 2.2em;
+    color: #2c3e50;
+    font-size: 2.5em;
     margin: 0;
 }
 
 #status {
-    font-size: 1em;
-    color: #ff5555;
+    font-size: 1.1em;
+    color: #e74c3c;
     margin-top: 10px;
 }
 
@@ -36,22 +36,24 @@ h1 {
     display: flex;
     justify-content: center;
     margin-bottom: 20px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .tab-button {
     padding: 10px 20px;
     margin: 0 5px;
     border: none;
-    background: #3b3b4f;
-    color: #e0e0e0;
+    background: #34495e;
+    color: #fff;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 25px;
     transition: background 0.3s;
 }
 
 .tab-button:hover, .tab-button.active {
-    background: #ff79c6;
-    color: #fff;
+    background: #1abc9c;
 }
 
 .tab-content {
@@ -63,18 +65,24 @@ h1 {
 }
 
 h2 {
-    color: #8be9fd;
-    border-bottom: 2px solid #8be9fd;
+    color: #2980b9;
+    border-bottom: 2px solid #3498db;
     padding-bottom: 5px;
 }
 
-#attendance-table, #log-messages {
+#dashboard {
+    padding: 20px;
+    background: #ecf0f1;
+    border-radius: 10px;
+}
+
+#attendance-table, #log-messages, #dashboard-content {
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid #3b3b4f;
+    border: 1px solid #ddd;
     padding: 10px;
-    background: #2a2a3c;
-    border-radius: 8px;
+    background: #f9f9f9;
+    border-radius: 10px;
 }
 
 table {
@@ -85,50 +93,73 @@ table {
 th, td {
     padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #3b3b4f;
+    border-bottom: 1px solid #eee;
 }
 
 th {
-    background: #8be9fd;
-    color: #1e1e2e;
+    background: #3498db;
+    color: #fff;
 }
 
 .control-section, .schedule-section {
     margin: 20px 0;
     padding: 15px;
-    background: #3b3b4f;
-    border-radius: 8px;
+    background: #ecf0f1;
+    border-radius: 10px;
 }
 
 button {
     padding: 10px 20px;
-    background: #ff79c6;
+    background: #e67e22;
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 25px;
     cursor: pointer;
     transition: background 0.3s;
 }
 
 button:hover {
-    background: #ff5555;
+    background: #d35400;
 }
 
 input {
     padding: 8px;
     margin: 5px;
-    border: 1px solid #3b3b4f;
+    border: 1px solid #ddd;
     border-radius: 5px;
     width: calc(100% - 20px);
     max-width: 200px;
-    background: #2a2a3c;
-    color: #e0e0e0;
 }
 
-canvas {
-    background: #2a2a3c;
-    border-radius: 8px;
+#dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#dashboard-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    text-align: center;
     padding: 10px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 20%;
+}
+
+#calendar {
+    margin-top: 20px;
+}
+
+#attendance-graph {
+    width: 100%;
+    height: 200px;
 }
 
 @media (max-width: 600px) {
@@ -141,5 +172,12 @@ canvas {
     input, button {
         width: 100%;
         max-width: none;
+    }
+    #dashboard-stats {
+        flex-direction: column;
+    }
+    .stat-card {
+        width: 100%;
+        margin-bottom: 10px;
     }
 }
