@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -49,94 +10,66 @@
 <body>
     <div class="container">
         <header>
-            <h1>Sistem Absensi Lintas Alam</h1>
-            <div id="status">Status MQTT: Terputus</div>
+            <h1>Dashboard</h1>
+            <div class="user-info">Carter Lipshutz <span style="color: #28a745">SUPER ADMIN</span></div>
         </header>
-        
-        <div class="tabs">
-            <button class="tab-button active" onclick="openTab('dashboard')">Dashboard</button>
-            <button class="tab-button" onclick="openTab('attendance')">Absensi</button>
-            <button class="tab-button" onclick="openTab('control')">Kontrol</button>
-            <button class="tab-button" onclick="openTab('schedule')">Jadwal</button>
-            <button class="tab-button" onclick="openTab('log')">Log</button>
+        <div class="sidebar">
+            <ul>
+                <li class="active" onclick="openTab('dashboard')">Dashboard</li>
+                <li onclick="openTab('attendance')">Absensi</li>
+                <li onclick="openTab('schedule')">Jadwal</li>
+                <li onclick="openTab('control')">Kontrol</li>
+                <li onclick="openTab('log')">Log</li>
+            </ul>
         </div>
-
-        <!-- Tab Dashboard -->
-        <div id="dashboard" class="tab-content active">
-            <div id="dashboard-content">
-                <div id="dashboard-header">
-                    <h2>Dashboard</h2>
-                    <div>Avg. Body Cleaning Time: Last 30 Days until 02 May 2025</div>
+        <div class="content">
+            <div class="tabs">
+                <button class="tab-button active" onclick="openTab('dashboard')">Dashboard</button>
+                <button class="tab-button" onclick="openTab('attendance')">Absensi</button>
+                <button class="tab-button" onclick="openTab('schedule')">Jadwal</button>
+                <button class="tab-button" onclick="openTab('control')">Kontrol</button>
+                <button class="tab-button" onclick="openTab('log')">Log</button>
+            </div>
+            <div id="dashboard" class="tab-content active">
+                <h2>Brionica</h2>
+                <p id="avg-cleaning-time">Avg. Body Cleaning Time: Last 30 Days until 18 January</p>
+                <div class="dashboard-section" id="employee-section"></div>
+                <div class="calendar">
+                    <h3>January 2019</h3>
+                    <table>
+                        <tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>
+                        <tr><td>30</td><td>31</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+                        <tr><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td></tr>
+                        <tr><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td></tr>
+                        <tr><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td></tr>
+                        <tr><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td><td>1</td><td>2</td></tr>
+                    </table>
                 </div>
-                <div id="dashboard-stats"></div>
-                <div id="calendar">
-                    <h3>May 2025</h3>
-                    <div>03 WEEK - M T W T F S S</div>
-                    <div>01 02 03 04 05 06 07</div>
-                    <div>08 09 10 11 12 13 14</div>
-                    <div>15 16 17 18 19 20 21</div>
-                    <div>22 23 24 25 26 27 28</div>
-                    <div>29 30 31</div>
+                <h2>Body Cleaning Time During the Day: 18 January (Today)</h2>
+                <table class="details-table" id="details-table"></table>
+                <h2>Attendance Overview</h2>
+                <div id="pieChartContainer">
+                    <canvas id="pieChart"></canvas>
                 </div>
-                <canvas id="attendance-graph"></canvas>
             </div>
-        </div>
-
-        <!-- Tab Absensi -->
-        <div id="attendance" class="tab-content">
-            <h2>Data Absensi</h2>
-            <div id="attendance-table"></div>
-        </div>
-
-        <!-- Tab Kontrol -->
-        <div id="control" class="tab-content">
-            <h2>Kontrol Perangkat</h2>
-            <div class="control-section">
-                <h3>Flash ESP32-CAM</h3>
-                <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
-                <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
+            <div id="attendance" class="tab-content">
+                <h2>Data Absensi</h2>
+                <div id="attendance-table"></div>
             </div>
-            <div class="control-section">
-                <h3>Pintu Manual</h3>
-                <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
-                <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
+            <div id="control" class="tab-content">
+                <h2>Kontrol</h2>
+                <!-- Control content here -->
             </div>
-            <div class="control-section">
-                <h3>OLED</h3>
-                <input type="text" id="oled-message" placeholder="Masukkan pesan">
-                <button onclick="sendOledMessage()">Kirim ke OLED</button>
+            <div id="schedule" class="tab-content">
+                <h2>Jadwal</h2>
+                <!-- Schedule content here -->
             </div>
-        </div>
-
-        <!-- Tab Jadwal -->
-        <div id="schedule" class="tab-content">
-            <h2>Jadwal Absensi</h2>
-            <div class="schedule-section">
-                <h3>Jadwal Mata Kuliah</h3>
-                <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                <input type="date" id="course-date">
-                <input type="time" id="course-start">
-                <input type="time" id="course-end">
-                <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
+            <div id="log" class="tab-content">
+                <h2>Log</h2>
+                <!-- Log content here -->
             </div>
-            <div class="schedule-section">
-                <h3>Jadwal Perorangan</h3>
-                <input type="text" id="person-name" placeholder="Nama Orang">
-                <input type="date" id="person-date">
-                <input type="time" id="person-start">
-                <input type="time" id="person-end">
-                <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
-            </div>
-        </div>
-
-        <!-- Tab Log -->
-        <div id="log" class="tab-content">
-            <h2>Log Aktivitas</h2>
-            <div id="log-messages"></div>
         </div>
     </div>
-
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="script.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'939474a7583dc015',t:'MTc0NjE1Njc5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
