@@ -14,10 +14,12 @@
             <button class="toggle-sidebar"><i class="fas fa-bars"></i></button>
         </div>
         <nav>
-            <button class="sidebar-button active" onclick="openTab('attendance')"><i class="fas fa-users"></i> Absensi</button>
+            <button class="sidebar-button active" onclick="openTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button class="sidebar-button" onclick="openTab('attendance')"><i class="fas fa-users"></i> Absensi</button>
             <button class="sidebar-button" onclick="openTab('control')"><i class="fas fa-cogs"></i> Kontrol</button>
             <button class="sidebar-button" onclick="openTab('course-schedule')"><i class="fas fa-calendar-alt"></i> Jadwal Mata Kuliah</button>
             <button class="sidebar-button" onclick="openTab('individual-schedule')"><i class="fas fa-user-clock"></i> Jadwal Perorangan</button>
+            <button class="sidebar-button" onclick="openTab('dataset')"><i class="fas fa-upload"></i> Dataset</button>
             <button class="sidebar-button" onclick="openTab('log')"><i class="fas fa-file-alt"></i> Log</button>
         </nav>
     </div>
@@ -28,8 +30,24 @@
                 <div id="status">Status MQTT: Terputus</div>
             </header>
 
+            <!-- Tab Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <h2>Dashboard</h2>
+                <div class="dashboard-section">
+                    <h3>Statistik Kehadiran per Mata Kuliah</h3>
+                    <canvas id="attendanceBarChart"></canvas>
+                </div>
+                <div class="dashboard-section">
+                    <h3>Persentase Kehadiran</h3>
+                    <select id="course-select" onchange="updatePieChart()">
+                        <option value="">Pilih Mata Kuliah</option>
+                    </select>
+                    <canvas id="attendancePieChart"></canvas>
+                </div>
+            </div>
+
             <!-- Tab Absensi -->
-            <div id="attendance" class="tab-content active">
+            <div id="attendance" class="tab-content">
                 <h2>Data Absensi</h2>
                 <div id="attendance-table"></div>
             </div>
@@ -50,54 +68,77 @@
                 <div class="control-section">
                     <h3>OLED</h3>
                     <input type="text" id="oled-message" placeholder="Masukkan pesan">
-                    <button onclick="sendOledMessage()">Kirim ke OLED</button>
-                </div>
+                    <button不规则的按钮样式
+button {
+    padding: 10px 20px;
+    background: #526D82;
+    color: #DDE6ED;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+button:hover {
+    background: #9DB2BF;
+}
+                <button onclick="sendOledMessage()">Kirim ke OLED</button>
             </div>
+        </div>
 
-            <!-- Tab Jadwal Mata Kuliah -->
-            <div id="course-schedule" class="tab-content">
-                <h2>Jadwal Mata Kuliah</h2>
-                <div class="schedule-section">
-                    <h3>Tambah Jadwal</h3>
-                    <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                    <input type="date" id="course-date">
-                    <input type="time" id="course-start">
-                    <input type="time" id="course-end">
-                    <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
-                </div>
-                <div class="schedule-section">
-                    <h3>Hapus Jadwal</h3>
-                    <button onclick="deleteCourseSchedule()">Hapus Jadwal Mata Kuliah</button>
-                </div>
+        <!-- Tab Jadwal Mata Kuliah -->
+        <div id="course-schedule" class="tab-content">
+            <h2>Jadwal Mata Kuliah</h2>
+            <div class="schedule-section">
+                <h3>Tambah Jadwal</h3>
+                <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
+                <input type="date" id="course-date">
+                <input type="time" id="course-start">
+                <input type="time" id="course-end">
+                <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
             </div>
+            <div class="schedule-section">
+                <h3>Hapus Jadwal</h3>
+                <button onclick="deleteCourseSchedule()">Hapus Jadwal Mata Kuliah</button>
+            </div>
+        </div>
 
-            <!-- Tab Jadwal Perorangan -->
-            <div id="individual-schedule" class="tab-content">
-                <h2>Jadwal Perorangan</h2>
-                <div class="schedule-section">
-                    <h3>Tambah Jadwal</h3>
-                    <input type="text" id="person-name" placeholder="Nama Orang">
-                    <input type="date" id="person-date">
-                    <input type="time" id="person-start">
-                    <input type="time" id="person-end">
-                    <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
-                </div>
-                <div class="schedule-section">
-                    <h3>Hapus Jadwal</h3>
-                    <input type="text" id="delete-person-name" placeholder="Nama Orang">
-                    <button onclick="deleteIndividualSchedule()">Hapus Jadwal Perorangan</button>
-                </div>
+        <!-- Tab Jadwal Perorangan -->
+        <div id="individual-schedule" class="tab-content">
+            <h2>Jadwal Perorangan</h2>
+            <div class="schedule-section">
+                <h3>Tambah Jadwal</h3>
+                <input type="text" id="person-name" placeholder="Nama Orang">
+                <input type="date" id="person-date">
+                <input type="time" id="person-start">
+                <input type="time" id="person-end">
+                <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
             </div>
+            <div class="schedule-section">
+                <h3>Hapus Jadwal</h3>
+                <input type="text" id="delete-person-name" placeholder="Nama Orang">
+                <button onclick="deleteIndividualSchedule()">Hapus Jadwal Perorangan</button>
+            </div>
+        </div>
 
-            <!-- Tab Log -->
-            <div id="log" class="tab-content">
-                <h2>Log Aktivitas</h2>
-                <div id="log-messages"></div>
+        <!-- Tab Dataset -->
+        <div id="dataset" class="tab-content">
+            <h2>Upload Dataset</h2>
+            <div class="dataset-section">
+                <input type="text" id="student-name" placeholder="Nama Mahasiswa">
+                <input type="file" id="dataset-files" accept="image/*" multiple>
+                <button onclick="uploadDataset()">Upload Dataset</button>
             </div>
+        </div>
+
+        <!-- Tab Log -->
+        <div id="log" class="tab-content">
+            <h2>Log Aktivitas</h2>
+            <div id="log-messages"></div>
         </div>
     </div>
 
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
