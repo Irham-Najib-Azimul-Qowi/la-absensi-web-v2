@@ -15,13 +15,12 @@
         </div>
         <nav>
             <button class="sidebar-button active" onclick="openTab('attendance')"><i class="fas fa-users"></i> Absensi</button>
-            <button class="sidebar-button" onclick="openTab('control')"><i class="fas fa-cog"></i> Kontrol</button>
-            <button class="sidebar-button" onclick="openTab('course-schedule')"><i class="fas fa-book"></i> Jadwal Mata Kuliah</button>
+            <button class="sidebar-button" onclick="openTab('control')"><i class="fas fa-cogs"></i> Kontrol</button>
+            <button class="sidebar-button" onclick="openTab('course-schedule')"><i class="fas fa-calendar-alt"></i> Jadwal Mata Kuliah</button>
             <button class="sidebar-button" onclick="openTab('individual-schedule')"><i class="fas fa-user-clock"></i> Jadwal Perorangan</button>
             <button class="sidebar-button" onclick="openTab('log')"><i class="fas fa-file-alt"></i> Log</button>
         </nav>
     </div>
-    
     <div class="main-content">
         <div class="container">
             <header>
@@ -59,12 +58,16 @@
             <div id="course-schedule" class="tab-content">
                 <h2>Jadwal Mata Kuliah</h2>
                 <div class="schedule-section">
+                    <h3>Tambah Jadwal</h3>
                     <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
                     <input type="date" id="course-date">
                     <input type="time" id="course-start">
                     <input type="time" id="course-end">
                     <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
-                    <button onclick="deleteCourseSchedule()">Hapus Jadwal</button>
+                </div>
+                <div class="schedule-section">
+                    <h3>Hapus Jadwal</h3>
+                    <button onclick="deleteCourseSchedule()">Hapus Jadwal Mata Kuliah</button>
                 </div>
             </div>
 
@@ -72,12 +75,17 @@
             <div id="individual-schedule" class="tab-content">
                 <h2>Jadwal Perorangan</h2>
                 <div class="schedule-section">
+                    <h3>Tambah Jadwal</h3>
                     <input type="text" id="person-name" placeholder="Nama Orang">
                     <input type="date" id="person-date">
                     <input type="time" id="person-start">
                     <input type="time" id="person-end">
                     <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
-                    <button onclick="deleteIndividualSchedule()">Hapus Jadwal</button>
+                </div>
+                <div class="schedule-section">
+                    <h3>Hapus Jadwal</h3>
+                    <input type="text" id="delete-person-name" placeholder="Nama Orang">
+                    <button onclick="deleteIndividualSchedule()">Hapus Jadwal Perorangan</button>
                 </div>
             </div>
 
