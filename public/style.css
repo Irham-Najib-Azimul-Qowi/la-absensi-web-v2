@@ -198,7 +198,9 @@ h3 {
 }
 
 #course-summary,
-#recent-logs {
+#recent-logs,
+#course-schedule-list,
+#individual-schedule-list {
     max-height: 200px;
     overflow-y: auto;
 }
