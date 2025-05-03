@@ -96,14 +96,15 @@
                 <div class="schedule-section">
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                    <input type="date" id="course-date">
-                    <input type="time" id="course-start">
-                    <input type="time" id="course-end">
+                    <button onclick="setCourseDateTime()">Atur Tanggal & Waktu</button>
+                    <input type="datetime-local" id="course-datetime-start" placeholder="Waktu Mulai">
+                    <input type="datetime-local" id="course-datetime-end" placeholder="Waktu Selesai">
                     <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
                 </div>
                 <div class="schedule-section">
-                    <h3>Hapus Jadwal</h3>
-                    <button onclick="deleteCourseSchedule()">Hapus Jadwal Mata Kuliah</button>
+                    <h3>Daftar Jadwal</h3>
+                    <div id="course-schedule-list"></div>
+                    <button onclick="deleteCourseSchedule()">Hapus Semua Jadwal</button>
                 </div>
             </div>
 
@@ -113,15 +114,15 @@
                 <div class="schedule-section">
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="person-name" placeholder="Nama Orang">
-                    <input type="date" id="person-date">
-                    <input type="time" id="person-start">
-                    <input type="time" id="person-end">
+                    <button onclick="setIndividualDateTime()">Atur Tanggal & Waktu</button>
+                    <input type="datetime-local" id="person-datetime-start" placeholder="Waktu Mulai">
+                    <input type="datetime-local" id="person-datetime-end" placeholder="Waktu Selesai">
                     <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
                 </div>
                 <div class="schedule-section">
-                    <h3>Hapus Jadwal</h3>
-                    <input type="text" id="delete-person-name" placeholder="Nama Orang">
-                    <button onclick="deleteIndividualSchedule()">Hapus Jadwal Perorangan</button>
+                    <h3>Daftar Jadwal</h3>
+                    <div id="individual-schedule-list"></div>
+                    <button onclick="deleteIndividualSchedule()">Hapus Semua Jadwal</button>
                 </div>
             </div>
 
