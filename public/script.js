@@ -4,12 +4,15 @@ let attendanceData = [];
 let studentList = [];
 let courses = new Set();
 let lineChart, pieChart, barChart;
+let courseSchedules = [];
+let individualSchedules = [];
 
 mqttClient.on('connect', () => {
     document.getElementById('status').innerText = 'Status MQTT: Terhubung';
     document.getElementById('status').style.color = '#2ecc71';
     mqttClient.subscribe('lintas_alam/detected_person');
     mqttClient.subscribe('lintas_alam/dataset_names');
+    mqttClient.subscribe('lintas_alam/schedule_response');
     logMessage('Terhubung ke MQTT Broker');
 });
 
@@ -38,6 +41,14 @@ mqttClient.on('message', (topic, message) => {
         courses.add(data.course);
         updateAttendanceTable();
         updateDashboard();
+    } else if (topic === 'lintas_alam/schedule_response') {
+        if (msg.type === 'course') {
+            courseSchedules = msg.schedules || [];
+            updateCourseScheduleList();
+        } else if (msg.type === 'individual') {
+            individualSchedules = msg.schedules || [];
+            updateIndividualScheduleList();
+        }
     }
 });
 
@@ -275,64 +286,82 @@ function updateRecentLogs() {
     });
 }
 
-function publishCommand(topic, message) {
-    mqttClient.publish(topic, message);
-    logMessage(`Perintah dikirim - Topic: ${topic}, Pesan: ${message}`);
+function setCourseDateTime() {
+    document.getElementById('course-datetime-start').value = '';
+    document.getElementById('course-datetime-end').value = '';
+    document.getElementById('course-datetime-start').disabled = false;
+    document.getElementById('course-datetime-end').disabled = false;
 }
 
-function sendOledMessage() {
-    const message = document.getElementById('oled-message').value;
-    if (message) {
-        publishCommand('lintas_alam/oled', message);
-        document.getElementById('oled-message').value = '';
-    } else {
-        logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
-    }
+function setIndividualDateTime() {
+    document.getElementById('person-datetime-start').value = '';
+    document.getElementById('person-datetime-end').value = '';
+    document.getElementById('person-datetime-start').disabled = false;
+    document.getElementById('person-datetime-end').disabled = false;
 }
 
 function saveCourseSchedule() {
     const course = document.getElementById('course-name').value;
-    const date = document.getElementById('course-date').value;
-    const start = document.getElementById('course-start').value;
-    const end = document.getElementById('course-end').value;
-    if (course && date && start && end) {
-        const startDateTime = `${date} ${start}:00`;
-        const endDateTime = `${date} ${end}:00`;
-        const payload = { course, start: startDateTime, end: endDateTime };
+    const start = document.getElementById('course-datetime-start').value;
+    const end = document.getElementById('course-datetime-end').value;
+    if (course && start && end) {
+        const payload = { type: 'course', course, start, end };
         publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        document.getElementById('course-name').value = '';
+        document.getElementById('course-datetime-start').value = '';
+        document.getElementById('course-datetime-end').value = '';
+        document.getElementById('course-datetime-start').disabled = true;
+        document.getElementById('course-datetime-end').disabled = true;
     } else {
         logMessage('Lengkapi semua field jadwal mata kuliah!');
     }
 }
 
+function updateCourseScheduleList() {
+    const listDiv = document.getElementById('course-schedule-list');
+    listDiv.innerHTML = '';
+    courseSchedules.forEach(schedule => {
+        const p = document.createElement('p');
+        p.textContent = `${schedule.course}: ${schedule.start} - ${schedule.end}`;
+        listDiv.appendChild(p);
+    });
+}
+
 function deleteCourseSchedule() {
-    publishCommand('lintas_alam/schedule', JSON.stringify({ course: 'delete' }));
-    logMessage('Jadwal mata kuliah dihapus');
+    publishCommand('lintas_alam/schedule', JSON.stringify({ type: 'course', action: 'delete' }));
+    logMessage('Semua jadwal mata kuliah dihapus');
 }
 
 function saveIndividualSchedule() {
     const person = document.getElementById('person-name').value;
-    const date = document.getElementById('person-date').value;
-    const start = document.getElementById('person-start').value;
-    const end = document.getElementById('person-end').value;
-    if (person && date && start && end) {
-        const startDateTime = `${date} ${start}:00`;
-        const endDateTime = `${date} ${end}:00`;
-        const payload = { person, start: startDateTime, end: endDateTime };
+    const start = document.getElementById('person-datetime-start').value;
+    const end = document.getElementById('person-datetime-end').value;
+    if (person && start && end) {
+        const payload = { type: 'individual', person, start, end };
         publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        document.getElementById('person-name').value = '';
+        document.getElementById('person-datetime-start').value = '';
+        document.getElementById('person-datetime-end').value = '';
+        document.getElementById('person-datetime-start').disabled = true;
+        document.getElementById('person-datetime-end').disabled = true;
     } else {
         logMessage('Lengkapi semua field jadwal perorangan!');
     }
 }
 
+function updateIndividualScheduleList() {
+    const listDiv = document.getElementById('individual-schedule-list');
+    listDiv.innerHTML = '';
+    individualSchedules.forEach(schedule => {
+        const p = document.createElement('p');
+        p.textContent = `${schedule.person}: ${schedule.start} - ${schedule.end}`;
+        listDiv.appendChild(p);
+    });
+}
+
 function deleteIndividualSchedule() {
-    const person = document.getElementById('delete-person-name').value;
-    if (person) {
-        publishCommand('lintas_alam/schedule', JSON.stringify({ person: 'delete', name: person }));
-        logMessage(`Jadwal perorangan untuk ${person} dihapus`);
-    } else {
-        logMessage('Masukkan nama untuk menghapus jadwal perorangan!');
-    }
+    publishCommand('lintas_alam/schedule', JSON.stringify({ type: 'individual', action: 'delete' }));
+    logMessage('Semua jadwal perorangan dihapus');
 }
 
 function uploadDataset() {
@@ -359,6 +388,21 @@ function uploadDataset() {
     logMessage(`Mengunggah ${files.length} gambar untuk ${studentName}`);
 }
 
+function publishCommand(topic, message) {
+    mqttClient.publish(topic, message);
+    logMessage(`Perintah dikirim - Topic: ${topic}, Pesan: ${message}`);
+}
+
+function sendOledMessage() {
+    const message = document.getElementById('oled-message').value;
+    if (message) {
+        publishCommand('lintas_alam/oled', message);
+        document.getElementById('oled-message').value = '';
+    } else {
+        logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
+    }
+}
+
 function logMessage(message) {
     const logDiv = document.getElementById('log-messages');
     const p = document.createElement('p');
@@ -373,6 +417,8 @@ function openTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
     if (tabId === 'dashboard') updateDashboard();
+    else if (tabId === 'course-schedule') updateCourseScheduleList();
+    else if (tabId === 'individual-schedule') updateIndividualScheduleList();
 }
 
 document.querySelector('.toggle-sidebar').addEventListener('click', () => {
@@ -382,4 +428,8 @@ document.querySelector('.toggle-sidebar').addEventListener('click', () => {
 
 window.onload = () => {
     fetchMessages();
+    document.getElementById('course-datetime-start').disabled = true;
+    document.getElementById('course-datetime-end').disabled = true;
+    document.getElementById('person-datetime-start').disabled = true;
+    document.getElementById('person-datetime-end').disabled = true;
 };
