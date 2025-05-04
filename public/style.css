@@ -199,8 +199,8 @@ h3 {
 
 #course-summary,
 #recent-logs,
-#course-schedule-list,
-#individual-schedule-list {
+#course-schedule-table,
+#individual-schedule-table {
     max-height: 200px;
     overflow-y: auto;
 }
@@ -238,6 +238,28 @@ th {
     background: #1A2634;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.datetime-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.datetime-controls input {
+    width: 200px;
+}
+
+.set-time {
+    font-size: 1.2em;
+    color: #526D82;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.set-time:hover {
+    color: #9DB2BF;
 }
 
 button {
@@ -299,5 +321,8 @@ input[type="file"] {
     input, select, button {
         width: 100%;
         max-width: none;
+    }
+    .datetime-controls input {
+        width: 150px;
     }
 }
