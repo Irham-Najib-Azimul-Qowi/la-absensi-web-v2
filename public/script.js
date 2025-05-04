@@ -7,12 +7,39 @@ let lineChart, pieChart, barChart;
 let courseSchedules = [];
 let individualSchedules = [];
 
+const dbConfig = {
+    host: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+    port: 4000,
+    user: '2v1KcdwiMtttUeh.root',
+    password: '2OxplUZ7nTiFxDVa',
+    database: 'test'
+};
+
+function saveToDatabase(endpoint, data) {
+    return fetch(`http://${dbConfig.host}:${dbConfig.port}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(response => response.json()).catch(error => {
+        logMessage(`Error saving to database: ${error}`);
+    });
+}
+
+function fetchFromDatabase(endpoint) {
+    return fetch(`http://${dbConfig.host}:${dbConfig.port}/${endpoint}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(response => response.json()).catch(error => {
+        logMessage(`Error fetching from database: ${error}`);
+        return [];
+    });
+}
+
 mqttClient.on('connect', () => {
     document.getElementById('status').innerText = 'Status MQTT: Terhubung';
     document.getElementById('status').style.color = '#2ecc71';
     mqttClient.subscribe('lintas_alam/detected_person');
     mqttClient.subscribe('lintas_alam/dataset_names');
-    mqttClient.subscribe('lintas_alam/schedule_response');
     logMessage('Terhubung ke MQTT Broker');
 });
 
@@ -41,14 +68,6 @@ mqttClient.on('message', (topic, message) => {
         courses.add(data.course);
         updateAttendanceTable();
         updateDashboard();
-    } else if (topic === 'lintas_alam/schedule_response') {
-        if (msg.type === 'course') {
-            courseSchedules = msg.schedules || [];
-            updateCourseScheduleList();
-        } else if (msg.type === 'individual') {
-            individualSchedules = msg.schedules || [];
-            updateIndividualScheduleList();
-        }
     }
 });
 
@@ -164,19 +183,10 @@ function updateLineChart() {
         },
         options: {
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: '#DDE6ED' },
-                    grid: { color: '#526D82' }
-                },
-                x: {
-                    ticks: { color: '#DDE6ED' },
-                    grid: { display: false }
-                }
+                y: { beginAtZero: true, ticks: { color: '#DDE6ED' }, grid: { color: '#526D82' } },
+                x: { ticks: { color: '#DDE6ED' }, grid: { display: false } }
             },
-            plugins: {
-                legend: { labels: { color: '#DDE6ED' } }
-            }
+            plugins: { legend: { labels: { color: '#DDE6ED' } } }
         }
     });
 }
@@ -209,11 +219,7 @@ function updatePieChart() {
                 borderWidth: 1
             }]
         },
-        options: {
-            plugins: {
-                legend: { labels: { color: '#DDE6ED' } }
-            }
-        }
+        options: { plugins: { legend: { labels: { color: '#DDE6ED' } } } }
     });
 }
 
@@ -245,19 +251,10 @@ function updateBarChart() {
         },
         options: {
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: '#DDE6ED' },
-                    grid: { color: '#526D82' }
-                },
-                x: {
-                    ticks: { color: '#DDE6ED' },
-                    grid: { display: false }
-                }
+                y: { beginAtZero: true, ticks: { color: '#DDE6ED' }, grid: { color: '#526D82' } },
+                x: { ticks: { color: '#DDE6ED' }, grid: { display: false } }
             },
-            plugins: {
-                legend: { labels: { color: '#DDE6ED' } }
-            }
+            plugins: { legend: { labels: { color: '#DDE6ED' } } }
         }
     });
 }
@@ -305,16 +302,26 @@ function saveCourseSchedule() {
     const start = document.getElementById('course-datetime-start').value;
     const end = document.getElementById('course-datetime-end').value;
     if (course && start && end) {
-        const payload = { type: 'course', course, start, end };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
-        document.getElementById('course-name').value = '';
-        document.getElementById('course-datetime-start').value = '';
-        document.getElementById('course-datetime-end').value = '';
-        document.getElementById('course-datetime-start').disabled = true;
-        document.getElementById('course-datetime-end').disabled = true;
+        const data = { type: 'course', course, start, end };
+        saveToDatabase('save-schedule', data).then(() => {
+            fetchCourseSchedules();
+            document.getElementById('course-name').value = '';
+            document.getElementById('course-datetime-start').value = '';
+            document.getElementById('course-datetime-end').value = '';
+            document.getElementById('course-datetime-start').disabled = true;
+            document.getElementById('course-datetime-end').disabled = true;
+            logMessage(`Jadwal mata kuliah ${course} disimpan`);
+        });
     } else {
         logMessage('Lengkapi semua field jadwal mata kuliah!');
     }
+}
+
+function fetchCourseSchedules() {
+    fetchFromDatabase('get-course-schedules').then(schedules => {
+        courseSchedules = schedules;
+        updateCourseScheduleList();
+    });
 }
 
 function updateCourseScheduleList() {
@@ -328,8 +335,11 @@ function updateCourseScheduleList() {
 }
 
 function deleteCourseSchedule() {
-    publishCommand('lintas_alam/schedule', JSON.stringify({ type: 'course', action: 'delete' }));
-    logMessage('Semua jadwal mata kuliah dihapus');
+    saveToDatabase('delete-schedule', { type: 'course' }).then(() => {
+        courseSchedules = [];
+        updateCourseScheduleList();
+        logMessage('Semua jadwal mata kuliah dihapus');
+    });
 }
 
 function saveIndividualSchedule() {
@@ -337,16 +347,26 @@ function saveIndividualSchedule() {
     const start = document.getElementById('person-datetime-start').value;
     const end = document.getElementById('person-datetime-end').value;
     if (person && start && end) {
-        const payload = { type: 'individual', person, start, end };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
-        document.getElementById('person-name').value = '';
-        document.getElementById('person-datetime-start').value = '';
-        document.getElementById('person-datetime-end').value = '';
-        document.getElementById('person-datetime-start').disabled = true;
-        document.getElementById('person-datetime-end').disabled = true;
+        const data = { type: 'individual', person, start, end };
+        saveToDatabase('save-schedule', data).then(() => {
+            fetchIndividualSchedules();
+            document.getElementById('person-name').value = '';
+            document.getElementById('person-datetime-start').value = '';
+            document.getElementById('person-datetime-end').value = '';
+            document.getElementById('person-datetime-start').disabled = true;
+            document.getElementById('person-datetime-end').disabled = true;
+            logMessage(`Jadwal perorangan ${person} disimpan`);
+        });
     } else {
         logMessage('Lengkapi semua field jadwal perorangan!');
     }
+}
+
+function fetchIndividualSchedules() {
+    fetchFromDatabase('get-individual-schedules').then(schedules => {
+        individualSchedules = schedules;
+        updateIndividualScheduleList();
+    });
 }
 
 function updateIndividualScheduleList() {
@@ -360,8 +380,11 @@ function updateIndividualScheduleList() {
 }
 
 function deleteIndividualSchedule() {
-    publishCommand('lintas_alam/schedule', JSON.stringify({ type: 'individual', action: 'delete' }));
-    logMessage('Semua jadwal perorangan dihapus');
+    saveToDatabase('delete-schedule', { type: 'individual' }).then(() => {
+        individualSchedules = [];
+        updateIndividualScheduleList();
+        logMessage('Semua jadwal perorangan dihapus');
+    });
 }
 
 function uploadDataset() {
@@ -417,8 +440,8 @@ function openTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
     if (tabId === 'dashboard') updateDashboard();
-    else if (tabId === 'course-schedule') updateCourseScheduleList();
-    else if (tabId === 'individual-schedule') updateIndividualScheduleList();
+    else if (tabId === 'course-schedule') fetchCourseSchedules();
+    else if (tabId === 'individual-schedule') fetchIndividualSchedules();
 }
 
 document.querySelector('.toggle-sidebar').addEventListener('click', () => {
@@ -428,6 +451,8 @@ document.querySelector('.toggle-sidebar').addEventListener('click', () => {
 
 window.onload = () => {
     fetchMessages();
+    fetchCourseSchedules();
+    fetchIndividualSchedules();
     document.getElementById('course-datetime-start').disabled = true;
     document.getElementById('course-datetime-end').disabled = true;
     document.getElementById('person-datetime-start').disabled = true;
