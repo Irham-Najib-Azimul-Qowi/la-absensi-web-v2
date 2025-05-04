@@ -311,12 +311,13 @@ function saveCourseSchedule() {
         const data = { type: 'course', course, start, end };
         saveToDatabase('save-schedule', data).then(() => {
             fetchCourseSchedules();
+            publishScheduleToESP32(data);
             document.getElementById('course-name').value = '';
             document.getElementById('course-datetime-start').value = '';
             document.getElementById('course-datetime-end').value = '';
             document.getElementById('course-datetime-start').disabled = true;
             document.getElementById('course-datetime-end').disabled = true;
-            logMessage(`Jadwal mata kuliah ${course} disimpan`);
+            logMessage(`Jadwal mata kuliah ${course} disimpan dan dikirim ke ESP32`);
         });
     } else {
         logMessage('Lengkapi semua field jadwal mata kuliah!');
@@ -345,7 +346,8 @@ function deleteCourseSchedule() {
     saveToDatabase('delete-schedule', { type: 'course' }).then(() => {
         courseSchedules = [];
         updateCourseScheduleTable();
-        logMessage('Semua jadwal mata kuliah dihapus');
+        publishDeleteToESP32('course');
+        logMessage('Semua jadwal mata kuliah dihapus dan notifikasi dikirim ke ESP32');
     });
 }
 
@@ -357,12 +359,13 @@ function saveIndividualSchedule() {
         const data = { type: 'individual', person, start, end };
         saveToDatabase('save-schedule', data).then(() => {
             fetchIndividualSchedules();
+            publishScheduleToESP32(data);
             document.getElementById('person-name').value = '';
             document.getElementById('person-datetime-start').value = '';
             document.getElementById('person-datetime-end').value = '';
             document.getElementById('person-datetime-start').disabled = true;
             document.getElementById('person-datetime-end').disabled = true;
-            logMessage(`Jadwal perorangan ${person} disimpan`);
+            logMessage(`Jadwal perorangan ${person} disimpan dan dikirim ke ESP32`);
         });
     } else {
         logMessage('Lengkapi semua field jadwal perorangan!');
@@ -391,7 +394,8 @@ function deleteIndividualSchedule() {
     saveToDatabase('delete-schedule', { type: 'individual' }).then(() => {
         individualSchedules = [];
         updateIndividualScheduleTable();
-        logMessage('Semua jadwal perorangan dihapus');
+        publishDeleteToESP32('individual');
+        logMessage('Semua jadwal perorangan dihapus dan notifikasi dikirim ke ESP32');
     });
 }
 
@@ -432,6 +436,23 @@ function sendOledMessage() {
     } else {
         logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
     }
+}
+
+function publishScheduleToESP32(schedule) {
+    const topic = 'lintas_alam/schedule_esp32';
+    const payload = {
+        type: schedule.type,
+        entity: schedule.course || schedule.person,
+        start: schedule.start,
+        end: schedule.end
+    };
+    publishCommand(topic, JSON.stringify(payload));
+}
+
+function publishDeleteToESP32(type) {
+    const topic = 'lintas_alam/schedule_esp32';
+    const payload = { type: type, action: 'delete' };
+    publishCommand(topic, JSON.stringify(payload));
 }
 
 function logMessage(message) {
