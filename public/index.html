@@ -96,14 +96,20 @@
                 <div class="schedule-section">
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                    <button onclick="setCourseDateTime()">Atur Tanggal & Waktu</button>
-                    <input type="datetime-local" id="course-datetime-start" placeholder="Waktu Mulai">
-                    <input type="datetime-local" id="course-datetime-end" placeholder="Waktu Selesai">
+                    <div class="datetime-controls">
+                        <input type="datetime-local" id="course-datetime-start" disabled>
+                        <i class="fas fa-calendar-alt set-time" onclick="setCourseStartTime()"></i>
+                        <i class="fas fa-clock set-time" onclick="setCourseEndTime()"></i>
+                        <input type="datetime-local" id="course-datetime-end" disabled>
+                    </div>
                     <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
                 </div>
                 <div class="schedule-section">
                     <h3>Daftar Jadwal</h3>
-                    <div id="course-schedule-list"></div>
+                    <table id="course-schedule-table">
+                        <thead><tr><th>Mata Kuliah</th><th>Waktu Mulai</th><th>Waktu Selesai</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
                     <button onclick="deleteCourseSchedule()">Hapus Semua Jadwal</button>
                 </div>
             </div>
@@ -114,14 +120,20 @@
                 <div class="schedule-section">
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="person-name" placeholder="Nama Orang">
-                    <button onclick="setIndividualDateTime()">Atur Tanggal & Waktu</button>
-                    <input type="datetime-local" id="person-datetime-start" placeholder="Waktu Mulai">
-                    <input type="datetime-local" id="person-datetime-end" placeholder="Waktu Selesai">
+                    <div class="datetime-controls">
+                        <input type="datetime-local" id="person-datetime-start" disabled>
+                        <i class="fas fa-calendar-alt set-time" onclick="setIndividualStartTime()"></i>
+                        <i class="fas fa-clock set-time" onclick="setIndividualEndTime()"></i>
+                        <input type="datetime-local" id="person-datetime-end" disabled>
+                    </div>
                     <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
                 </div>
                 <div class="schedule-section">
                     <h3>Daftar Jadwal</h3>
-                    <div id="individual-schedule-list"></div>
+                    <table id="individual-schedule-table">
+                        <thead><tr><th>Nama</th><th>Waktu Mulai</th><th>Waktu Selesai</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
                     <button onclick="deleteIndividualSchedule()">Hapus Semua Jadwal</button>
                 </div>
             </div>
