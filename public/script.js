@@ -1,5 +1,5 @@
 const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
-const apiUrl = 'https://la-absensi-web.vercel.app/api';
+const apiUrl = 'http://localhost:5000'; // Adjust to your server address
 let attendanceData = [];
 let studentList = [];
 let courses = new Set();
@@ -16,7 +16,7 @@ const dbConfig = {
 };
 
 function saveToDatabase(endpoint, data) {
-    return fetch(`http://${dbConfig.host}:${dbConfig.port}/${endpoint}`, {
+    return fetch(`${apiUrl}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -26,7 +26,7 @@ function saveToDatabase(endpoint, data) {
 }
 
 function fetchFromDatabase(endpoint) {
-    return fetch(`http://${dbConfig.host}:${dbConfig.port}/${endpoint}`, {
+    return fetch(`${apiUrl}/${endpoint}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     }).then(response => response.json()).catch(error => {
@@ -283,18 +283,24 @@ function updateRecentLogs() {
     });
 }
 
-function setCourseDateTime() {
-    document.getElementById('course-datetime-start').value = '';
-    document.getElementById('course-datetime-end').value = '';
+function setCourseStartTime() {
     document.getElementById('course-datetime-start').disabled = false;
-    document.getElementById('course-datetime-end').disabled = false;
+    document.getElementById('course-datetime-start').focus();
 }
 
-function setIndividualDateTime() {
-    document.getElementById('person-datetime-start').value = '';
-    document.getElementById('person-datetime-end').value = '';
+function setCourseEndTime() {
+    document.getElementById('course-datetime-end').disabled = false;
+    document.getElementById('course-datetime-end').focus();
+}
+
+function setIndividualStartTime() {
     document.getElementById('person-datetime-start').disabled = false;
+    document.getElementById('person-datetime-start').focus();
+}
+
+function setIndividualEndTime() {
     document.getElementById('person-datetime-end').disabled = false;
+    document.getElementById('person-datetime-end').focus();
 }
 
 function saveCourseSchedule() {
@@ -320,24 +326,25 @@ function saveCourseSchedule() {
 function fetchCourseSchedules() {
     fetchFromDatabase('get-course-schedules').then(schedules => {
         courseSchedules = schedules;
-        updateCourseScheduleList();
+        updateCourseScheduleTable();
     });
 }
 
-function updateCourseScheduleList() {
-    const listDiv = document.getElementById('course-schedule-list');
-    listDiv.innerHTML = '';
+function updateCourseScheduleTable() {
+    const tableBody = document.getElementById('course-schedule-table').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = '';
     courseSchedules.forEach(schedule => {
-        const p = document.createElement('p');
-        p.textContent = `${schedule.course}: ${schedule.start} - ${schedule.end}`;
-        listDiv.appendChild(p);
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = schedule.course;
+        row.insertCell(1).textContent = schedule.start;
+        row.insertCell(2).textContent = schedule.end;
     });
 }
 
 function deleteCourseSchedule() {
     saveToDatabase('delete-schedule', { type: 'course' }).then(() => {
         courseSchedules = [];
-        updateCourseScheduleList();
+        updateCourseScheduleTable();
         logMessage('Semua jadwal mata kuliah dihapus');
     });
 }
@@ -365,24 +372,25 @@ function saveIndividualSchedule() {
 function fetchIndividualSchedules() {
     fetchFromDatabase('get-individual-schedules').then(schedules => {
         individualSchedules = schedules;
-        updateIndividualScheduleList();
+        updateIndividualScheduleTable();
     });
 }
 
-function updateIndividualScheduleList() {
-    const listDiv = document.getElementById('individual-schedule-list');
-    listDiv.innerHTML = '';
+function updateIndividualScheduleTable() {
+    const tableBody = document.getElementById('individual-schedule-table').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = '';
     individualSchedules.forEach(schedule => {
-        const p = document.createElement('p');
-        p.textContent = `${schedule.person}: ${schedule.start} - ${schedule.end}`;
-        listDiv.appendChild(p);
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = schedule.person;
+        row.insertCell(1).textContent = schedule.start;
+        row.insertCell(2).textContent = schedule.end;
     });
 }
 
 function deleteIndividualSchedule() {
     saveToDatabase('delete-schedule', { type: 'individual' }).then(() => {
         individualSchedules = [];
-        updateIndividualScheduleList();
+        updateIndividualScheduleTable();
         logMessage('Semua jadwal perorangan dihapus');
     });
 }
