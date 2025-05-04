@@ -53,6 +53,18 @@
                         <h3>Kehadiran per Mata Kuliah</h3>
                         <canvas id="attendanceBarChart"></canvas>
                     </div>
+                    <div class="dashboard-card attendance-stacked">
+                        <h3>Kehadiran Mahasiswa per Mata Kuliah</h3>
+                        <canvas id="attendanceStackedChart"></canvas>
+                    </div>
+                    <div class="dashboard-card attendance-heatmap">
+                        <h3>Pola Kehadiran</h3>
+                        <canvas id="attendanceHeatmap"></canvas>
+                    </div>
+                    <div class="dashboard-card attendance-donut">
+                        <h3>Distribusi Status Kehadiran</h3>
+                        <canvas id="attendanceDonutChart"></canvas>
+                    </div>
                     <div class="dashboard-card currencies-market">
                         <h3>Ringkasan Mata Kuliah</h3>
                         <div id="course-summary"></div>
@@ -97,10 +109,10 @@
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
                     <div class="datetime-controls">
-                        <input type="datetime-local" id="course-datetime-start" disabled>
-                        <i class="fas fa-calendar-alt set-time" onclick="setCourseStartTime()"></i>
-                        <i class="fas fa-clock set-time" onclick="setCourseEndTime()"></i>
-                        <input type="datetime-local" id="course-datetime-end" disabled>
+                        <input type="datetime-local" id="course-datetime-start">
+                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('course-datetime-start').focus()"></i>
+                        <input type="datetime-local" id="course-datetime-end">
+                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('course-datetime-end').focus()"></i>
                     </div>
                     <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
                 </div>
@@ -121,10 +133,10 @@
                     <h3>Tambah Jadwal</h3>
                     <input type="text" id="person-name" placeholder="Nama Orang">
                     <div class="datetime-controls">
-                        <input type="datetime-local" id="person-datetime-start" disabled>
-                        <i class="fas fa-calendar-alt set-time" onclick="setIndividualStartTime()"></i>
-                        <i class="fas fa-clock set-time" onclick="setIndividualEndTime()"></i>
-                        <input type="datetime-local" id="person-datetime-end" disabled>
+                        <input type="datetime-local" id="person-datetime-start">
+                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('person-datetime-start').focus()"></i>
+                        <input type="datetime-local" id="person-datetime-end">
+                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('person-datetime-end').focus()"></i>
                     </div>
                     <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
                 </div>
