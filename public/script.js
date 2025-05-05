@@ -1,5 +1,5 @@
 const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
-const apiUrl = 'http://localhost:5000'; // URL API lokal
+const apiUrl = 'https://la-absensi-web.vercel.app/api';
 let attendanceData = [];
 let studentList = [];
 let courses = new Set();
@@ -11,6 +11,7 @@ mqttClient.on('connect', () => {
     mqttClient.subscribe('lintas_alam/detected_person');
     mqttClient.subscribe('lintas_alam/dataset_names');
     logMessage('Terhubung ke MQTT Broker');
+    checkDatabaseStatus();
 });
 
 mqttClient.on('message', (topic, message) => {
@@ -19,80 +20,79 @@ mqttClient.on('message', (topic, message) => {
     
     if (topic === 'lintas_alam/dataset_names') {
         studentList = msg.names || [];
-        updateStudentSelects();
         updateAttendanceTable();
         updateDashboard();
     } else if (topic === 'lintas_alam/detected_person') {
+        const now = new Date();
         const data = {
-            full_name: msg.name,
-            attendance_time: new Date().toISOString(),
+            name: msg.name,
+            timestamp: now.toLocaleString(),
             status: 'Hadir',
-            course_name: msg.course || 'Tidak ada jadwal'
+            course: msg.course || 'Tidak ada jadwal'
         };
+        saveMessage(data);
+        const existingIndex = attendanceData.findIndex(item => item.name === msg.name && item.course === data.course);
+        if (existingIndex !== -1) {
+            attendanceData.splice(existingIndex, 1);
+        }
         attendanceData.unshift(data);
-        courses.add(data.course_name);
+        courses.add(data.course);
         updateAttendanceTable();
         updateDashboard();
-        fetch(`${apiUrl}/save-attendance`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: data.full_name,
-                timestamp: new Date(data.attendance_time).toLocaleString('en-US'),
-                status: data.status,
-                course: data.course_name
-            })
-        })
-        .then(response => response.json())
-        .then(result => logMessage(`Absensi disimpan: ${JSON.stringify(result)}`))
-        .catch(error => logMessage(`Error menyimpan absensi: ${error}`));
     }
 });
 
-function fetchAttendance() {
-    fetch(`${apiUrl}/get-attendance`)
+function checkDatabaseStatus() {
+    fetch(`${apiUrl}/db-status`)
+        .then(response => response.json())
+        .then(result => {
+            document.getElementById('db-status').innerText = `Status DB: ${result.status}`;
+            document.getElementById('db-status').style.color = result.status === 'Terhubung' ? '#2ecc71' : '#e74c3c';
+        })
+        .catch(error => {
+            document.getElementById('db-status').innerText = 'Status DB: Terputus';
+            document.getElementById('db-status').style.color = '#e74c3c';
+            logMessage(`Error memeriksa status database: ${error}`);
+        });
+}
+
+function saveMessage(data) {
+    fetch(`${apiUrl}/save-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => logMessage(`Data disimpan: ${JSON.stringify(result)}`))
+    .catch(error => logMessage(`Error menyimpan data: ${error}`));
+}
+
+function fetchMessages() {
+    fetch(`${apiUrl}/get-messages`)
         .then(response => response.json())
         .then(messages => {
             attendanceData = messages.map(msg => ({
-                full_name: msg.full_name,
-                attendance_time: msg.attendance_time,
-                status: msg.status,
-                course_name: msg.course_name || 'Tidak ada jadwal'
+                name: msg.name,
+                timestamp: msg.timestamp,
+                status: 'Hadir',
+                course: msg.course || 'Tidak ada jadwal'
             }));
-            messages.forEach(msg => courses.add(msg.course_name));
+            messages.forEach(msg => courses.add(msg.course));
             updateAttendanceTable();
             updateDashboard();
         })
-        .catch(error => logMessage(`Error mengambil data absensi: ${error}`));
+        .catch(error => logMessage(`Error mengambil data: ${error}`));
 }
 
 function fetchStudents() {
     fetch(`${apiUrl}/get-students`)
         .then(response => response.json())
         .then(students => {
-            studentList = students.map(s => s.full_name);
-            updateStudentSelects();
+            studentList = students.map(student => student.full_name);
             updateAttendanceTable();
             updateDashboard();
         })
-        .catch(error => logMessage(`Error mengambil daftar siswa: ${error}`));
-}
-
-function updateStudentSelects() {
-    const selects = [
-        document.getElementById('student-name'),
-        document.getElementById('person-name'),
-        document.getElementById('delete-person-name')
-    ];
-    selects.forEach(select => {
-        select.innerHTML = '<option value="">Pilih Nama</option>';
-        studentList.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
-        });
-    });
+        .catch(error => logMessage(`Error mengambil daftar mahasiswa: ${error}`));
 }
 
 function updateAttendanceTable() {
@@ -101,26 +101,26 @@ function updateAttendanceTable() {
     
     const attendedStudents = attendanceData.map((data, index) => ({
         no: index + 1,
-        full_name: data.full_name,
-        attendance_time: new Date(data.attendance_time).toLocaleString(),
+        name: data.name,
+        timestamp: data.timestamp,
         status: data.status,
-        course_name: data.course_name
+        course: data.course
     }));
 
     const unattendedStudents = studentList
-        .filter(name => !attendanceData.some(data => data.full_name === name))
+        .filter(name => !attendanceData.some(data => data.name === name))
         .map((name, index) => ({
             no: attendedStudents.length + index + 1,
-            full_name: name,
-            attendance_time: '-',
+            name: name,
+            timestamp: '-',
             status: 'Belum Hadir',
-            course_name: '-'
+            course: '-'
         }));
 
     const allStudents = [...attendedStudents, ...unattendedStudents];
 
     allStudents.forEach(data => {
-        html += `<tr><td>${data.no}</td><td>${data.full_name}</td><td>${data.attendance_time}</td><td>${data.status}</td><td>${data.course_name}</td></tr>`;
+        html += `<tr><td>${data.no}</td><td>${data.name}</td><td>${data.timestamp}</td><td>${data.status}</td><td>${data.course}</td></tr>`;
     });
 
     html += '</table>';
@@ -157,10 +157,8 @@ function updateTotalAttendance() {
 
 function updateLineChart() {
     const ctx = document.getElementById('attendanceLineChart').getContext('2d');
-    const timestamps = [...new Set(attendanceData.map(data => new Date(data.attendance_time).toLocaleDateString()))].sort();
-    const attendanceCount = timestamps.map(t => 
-        attendanceData.filter(data => new Date(data.attendance_time).toLocaleDateString() === t).length
-    );
+    const timestamps = [...new Set(attendanceData.map(data => data.timestamp))].sort();
+    const attendanceCount = timestamps.map(t => attendanceData.filter(data => data.timestamp === t).length);
 
     if (lineChart) {
         lineChart.destroy();
@@ -204,7 +202,7 @@ function updatePieChart() {
     
     let present = 0, absent = 0;
     if (course) {
-        present = attendanceData.filter(data => data.course_name === course).length;
+        present = attendanceData.filter(data => data.course === course).length;
         absent = studentList.length - present;
     } else {
         present = attendanceData.length;
@@ -240,7 +238,7 @@ function updateBarChart() {
     
     courses.forEach(course => {
         if (course !== 'Tidak ada jadwal') {
-            courseAttendance[course] = attendanceData.filter(data => data.course_name === course).length;
+            courseAttendance[course] = attendanceData.filter(data => data.course === course).length;
         }
     });
 
@@ -284,7 +282,7 @@ function updateCourseSummary() {
     summaryDiv.innerHTML = '';
     courses.forEach(course => {
         if (course !== 'Tidak ada jadwal') {
-            const count = attendanceData.filter(data => data.course_name === course).length;
+            const count = attendanceData.filter(data => data.course === course).length;
             const p = document.createElement('p');
             p.textContent = `${course}: ${count} Hadir`;
             summaryDiv.appendChild(p);
@@ -295,9 +293,7 @@ function updateCourseSummary() {
 function updateRecentLogs() {
     const logsDiv = document.getElementById('recent-logs');
     logsDiv.innerHTML = '';
-    const recent = attendanceData.slice(0, 5).map(data => 
-        `${data.full_name} - ${new Date(data.attendance_time).toLocaleString()} (${data.course_name})`
-    ).reverse();
+    const recent = attendanceData.slice(0, 5).map(data => `${data.name} - ${data.timestamp} (${data.course})`).reverse();
     recent.forEach(log => {
         const p = document.createElement('p');
         p.textContent = log;
@@ -329,15 +325,34 @@ function saveCourseSchedule() {
         const startDateTime = `${date} ${start}:00`;
         const endDateTime = `${date} ${end}:00`;
         const payload = { course, start: startDateTime, end: endDateTime };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        fetch(`${apiUrl}/save-schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(result => {
+            logMessage(`Jadwal mata kuliah disimpan: ${JSON.stringify(result)}`);
+            publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        })
+        .catch(error => logMessage(`Error menyimpan jadwal: ${error}`));
     } else {
         logMessage('Lengkapi semua field jadwal mata kuliah!');
     }
 }
 
 function deleteCourseSchedule() {
-    publishCommand('lintas_alam/schedule', JSON.stringify({ course: 'delete' }));
-    logMessage('Jadwal mata kuliah dihapus');
+    fetch(`${apiUrl}/delete-course-schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: 'delete' })
+    })
+    .then(response => response.json())
+    .then(result => {
+        logMessage('Jadwal mata kuliah dihapus');
+        publishCommand('lintas_alam/schedule', JSON.stringify({ course: 'delete' }));
+    })
+    .catch(error => logMessage(`Error menghapus jadwal: ${error}`));
 }
 
 function saveIndividualSchedule() {
@@ -349,7 +364,17 @@ function saveIndividualSchedule() {
         const startDateTime = `${date} ${start}:00`;
         const endDateTime = `${date} ${end}:00`;
         const payload = { person, start: startDateTime, end: endDateTime };
-        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        fetch(`${apiUrl}/save-schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(result => {
+            logMessage(`Jadwal perorangan disimpan: ${JSON.stringify(result)}`);
+            publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+        })
+        .catch(error => logMessage(`Error menyimpan jadwal: ${error}`));
     } else {
         logMessage('Lengkapi semua field jadwal perorangan!');
     }
@@ -358,10 +383,19 @@ function saveIndividualSchedule() {
 function deleteIndividualSchedule() {
     const person = document.getElementById('delete-person-name').value;
     if (person) {
-        publishCommand('lintas_alam/schedule', JSON.stringify({ person: 'delete', name: person }));
-        logMessage(`Jadwal perorangan untuk ${person} dihapus`);
+        fetch(`${apiUrl}/delete-individual-schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ person: 'delete', name: person })
+        })
+        .then(response => response.json())
+        .then(result => {
+            logMessage(`Jadwal perorangan untuk ${person} dihapus`);
+            publishCommand('lintas_alam/schedule', JSON.stringify({ person: 'delete', name: person }));
+        })
+        .catch(error => logMessage(`Error menghapus jadwal: ${error}`));
     } else {
-        logMessage('Pilih nama untuk menghapus jadwal perorangan!');
+        logMessage('Masukkan nama untuk menghapus jadwal perorangan!');
     }
 }
 
@@ -370,7 +404,7 @@ function uploadDataset() {
     const files = document.getElementById('dataset-files').files;
     
     if (!studentName || files.length === 0) {
-        logMessage('Pilih nama mahasiswa dan setidaknya satu gambar!');
+        logMessage('Masukkan nama mahasiswa dan pilih setidaknya satu gambar!');
         return;
     }
 
@@ -382,7 +416,17 @@ function uploadDataset() {
                 image: reader.result.split(',')[1],
                 fileName: `${studentName}_${index + 1}.jpg`
             };
-            publishCommand('lintas_alam/dataset_upload', JSON.stringify(payload));
+            fetch(`${apiUrl}/upload-dataset`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                logMessage(`Gambar ${payload.fileName} diunggah untuk ${studentName}`);
+                publishCommand('lintas_alam/dataset_upload', JSON.stringify(payload));
+            })
+            .catch(error => logMessage(`Error mengunggah dataset: ${error}`));
         };
         reader.readAsDataURL(file);
     });
@@ -405,12 +449,7 @@ function openTab(tabId) {
     if (tabId === 'dashboard') updateDashboard();
 }
 
-document.querySelector('.toggle-sidebar').addEventListener('click', () => {
-    document.querySelector('.sidebar').classList.toggle('collapsed');
-    document.querySelector('.main-content').classList.toggle('collapsed');
-});
-
 window.onload = () => {
+    fetchMessages();
     fetchStudents();
-    fetchAttendance();
 };
