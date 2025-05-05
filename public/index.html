@@ -28,6 +28,7 @@
             <header>
                 <h1>Sistem Absensi Lintas Alam</h1>
                 <div id="status">Status MQTT: Terputus</div>
+                <div id="db-status">Status DB: Terputus</div>
             </header>
 
             <!-- Tab Dashboard -->
@@ -112,9 +113,7 @@
                 <h2>Jadwal Perorangan</h2>
                 <div class="schedule-section">
                     <h3>Tambah Jadwal</h3>
-                    <select id="person-name">
-                        <option value="">Pilih Nama</option>
-                    </select>
+                    <input type="text" id="person-name" placeholder="Nama Orang">
                     <input type="date" id="person-date">
                     <input type="time" id="person-start">
                     <input type="time" id="person-end">
@@ -122,9 +121,7 @@
                 </div>
                 <div class="schedule-section">
                     <h3>Hapus Jadwal</h3>
-                    <select id="delete-person-name">
-                        <option value="">Pilih Nama</option>
-                    </select>
+                    <input type="text" id="delete-person-name" placeholder="Nama Orang">
                     <button onclick="deleteIndividualSchedule()">Hapus Jadwal Perorangan</button>
                 </div>
             </div>
@@ -133,9 +130,7 @@
             <div id="dataset" class="tab-content">
                 <h2>Upload Dataset</h2>
                 <div class="dataset-section">
-                    <select id="student-name">
-                        <option value="">Pilih Nama Mahasiswa</option>
-                    </select>
+                    <input type="text" id="student-name" placeholder="Nama Mahasiswa">
                     <input type="file" id="dataset-files" accept="image/*" multiple>
                     <button onclick="uploadDataset()">Upload Dataset</button>
                 </div>
