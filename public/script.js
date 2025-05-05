@@ -1,89 +1,416 @@
-const apiUrl = 'http://localhost:5000'; // Ganti dengan URL API Anda
+const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+const apiUrl = 'http://localhost:5000'; // URL API lokal
+let attendanceData = [];
+let studentList = [];
+let courses = new Set();
+let lineChart, pieChart, barChart;
 
-async function fetchAttendance() {
-    try {
-        const response = await fetch(`${apiUrl}/get-attendance`);
-        const data = await response.json();
-        const tableBody = document.querySelector('#attendanceTable tbody');
-        tableBody.innerHTML = '';
+mqttClient.on('connect', () => {
+    document.getElementById('status').innerText = 'Status MQTT: Terhubung';
+    document.getElementById('status').style.color = '#2ecc71';
+    mqttClient.subscribe('lintas_alam/detected_person');
+    mqttClient.subscribe('lintas_alam/dataset_names');
+    logMessage('Terhubung ke MQTT Broker');
+});
 
-        data.forEach(entry => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${entry.full_name}</td>
-                <td>${new Date(entry.attendance_time).toLocaleString()}</td>
-                <td>${entry.course_name}</td>
-                <td>${entry.status}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Error mengambil data absensi:', error);
+mqttClient.on('message', (topic, message) => {
+    const msg = JSON.parse(message.toString());
+    logMessage(`Pesan diterima - Topic: ${topic}, Data: ${JSON.stringify(msg)}`);
+    
+    if (topic === 'lintas_alam/dataset_names') {
+        studentList = msg.names || [];
+        updateStudentSelects();
+        updateAttendanceTable();
+        updateDashboard();
+    } else if (topic === 'lintas_alam/detected_person') {
+        const data = {
+            full_name: msg.name,
+            attendance_time: new Date().toISOString(),
+            status: 'Hadir',
+            course_name: msg.course || 'Tidak ada jadwal'
+        };
+        attendanceData.unshift(data);
+        courses.add(data.course_name);
+        updateAttendanceTable();
+        updateDashboard();
+        fetch(`${apiUrl}/save-attendance`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: data.full_name,
+                timestamp: new Date(data.attendance_time).toLocaleString('en-US'),
+                status: data.status,
+                course: data.course_name
+            })
+        })
+        .then(response => response.json())
+        .then(result => logMessage(`Absensi disimpan: ${JSON.stringify(result)}`))
+        .catch(error => logMessage(`Error menyimpan absensi: ${error}`));
     }
+});
+
+function fetchAttendance() {
+    fetch(`${apiUrl}/get-attendance`)
+        .then(response => response.json())
+        .then(messages => {
+            attendanceData = messages.map(msg => ({
+                full_name: msg.full_name,
+                attendance_time: msg.attendance_time,
+                status: msg.status,
+                course_name: msg.course_name || 'Tidak ada jadwal'
+            }));
+            messages.forEach(msg => courses.add(msg.course_name));
+            updateAttendanceTable();
+            updateDashboard();
+        })
+        .catch(error => logMessage(`Error mengambil data absensi: ${error}`));
 }
 
-async function fetchStudents() {
-    try {
-        const response = await fetch(`${apiUrl}/get-students`);
-        const data = await response.json();
-        const select = document.querySelector('#studentName');
-        select.innerHTML = '<option value="">Pilih Siswa</option>';
+function fetchStudents() {
+    fetch(`${apiUrl}/get-students`)
+        .then(response => response.json())
+        .then(students => {
+            studentList = students.map(s => s.full_name);
+            updateStudentSelects();
+            updateAttendanceTable();
+            updateDashboard();
+        })
+        .catch(error => logMessage(`Error mengambil daftar siswa: ${error}`));
+}
 
-        data.forEach(student => {
+function updateStudentSelects() {
+    const selects = [
+        document.getElementById('student-name'),
+        document.getElementById('person-name'),
+        document.getElementById('delete-person-name')
+    ];
+    selects.forEach(select => {
+        select.innerHTML = '<option value="">Pilih Nama</option>';
+        studentList.forEach(name => {
             const option = document.createElement('option');
-            option.value = student.full_name;
-            option.textContent = student.full_name;
+            option.value = name;
+            option.textContent = name;
             select.appendChild(option);
         });
-    } catch (error) {
-        console.error('Error mengambil daftar siswa:', error);
+    });
+}
+
+function updateAttendanceTable() {
+    const tableDiv = document.getElementById('attendance-table');
+    let html = '<table><tr><th>No</th><th>Nama</th><th>Waktu</th><th>Status</th><th>Mata Kuliah</th></tr>';
+    
+    const attendedStudents = attendanceData.map((data, index) => ({
+        no: index + 1,
+        full_name: data.full_name,
+        attendance_time: new Date(data.attendance_time).toLocaleString(),
+        status: data.status,
+        course_name: data.course_name
+    }));
+
+    const unattendedStudents = studentList
+        .filter(name => !attendanceData.some(data => data.full_name === name))
+        .map((name, index) => ({
+            no: attendedStudents.length + index + 1,
+            full_name: name,
+            attendance_time: '-',
+            status: 'Belum Hadir',
+            course_name: '-'
+        }));
+
+    const allStudents = [...attendedStudents, ...unattendedStudents];
+
+    allStudents.forEach(data => {
+        html += `<tr><td>${data.no}</td><td>${data.full_name}</td><td>${data.attendance_time}</td><td>${data.status}</td><td>${data.course_name}</td></tr>`;
+    });
+
+    html += '</table>';
+    tableDiv.innerHTML = html;
+}
+
+function updateDashboard() {
+    updateCourseSelect();
+    updateTotalAttendance();
+    updateLineChart();
+    updatePieChart();
+    updateBarChart();
+    updateCourseSummary();
+    updateRecentLogs();
+}
+
+function updateCourseSelect() {
+    const select = document.getElementById('course-select');
+    select.innerHTML = '<option value="">Pilih Mata Kuliah</option>';
+    courses.forEach(course => {
+        if (course !== 'Tidak ada jadwal') {
+            const option = document.createElement('option');
+            option.value = course;
+            option.textContent = course;
+            select.appendChild(option);
+        }
+    });
+}
+
+function updateTotalAttendance() {
+    const total = attendanceData.length;
+    document.getElementById('total-attendance-value').textContent = `${total} Mahasiswa`;
+}
+
+function updateLineChart() {
+    const ctx = document.getElementById('attendanceLineChart').getContext('2d');
+    const timestamps = [...new Set(attendanceData.map(data => new Date(data.attendance_time).toLocaleDateString()))].sort();
+    const attendanceCount = timestamps.map(t => 
+        attendanceData.filter(data => new Date(data.attendance_time).toLocaleDateString() === t).length
+    );
+
+    if (lineChart) {
+        lineChart.destroy();
+    }
+
+    lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'Jumlah Hadir',
+                data: attendanceCount,
+                borderColor: '#2ecc71',
+                backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#DDE6ED' },
+                    grid: { color: '#526D82' }
+                },
+                x: {
+                    ticks: { color: '#DDE6ED' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#DDE6ED' } }
+            }
+        }
+    });
+}
+
+function updatePieChart() {
+    const ctx = document.getElementById('attendancePieChart').getContext('2d');
+    const course = document.getElementById('course-select').value;
+    
+    let present = 0, absent = 0;
+    if (course) {
+        present = attendanceData.filter(data => data.course_name === course).length;
+        absent = studentList.length - present;
+    } else {
+        present = attendanceData.length;
+        absent = studentList.length - attendanceData.length;
+    }
+
+    if (pieChart) {
+        pieChart.destroy();
+    }
+
+    pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Hadir', 'Belum Hadir'],
+            datasets: [{
+                data: [present, absent],
+                backgroundColor: ['#2ecc71', '#9DB2BF'],
+                borderColor: '#DDE6ED',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: '#DDE6ED' } }
+            }
+        }
+    });
+}
+
+function updateBarChart() {
+    const ctx = document.getElementById('attendanceBarChart').getContext('2d');
+    const courseAttendance = {};
+    
+    courses.forEach(course => {
+        if (course !== 'Tidak ada jadwal') {
+            courseAttendance[course] = attendanceData.filter(data => data.course_name === course).length;
+        }
+    });
+
+    if (barChart) {
+        barChart.destroy();
+    }
+
+    barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(courseAttendance),
+            datasets: [{
+                label: 'Jumlah Mahasiswa Hadir',
+                data: Object.values(courseAttendance),
+                backgroundColor: '#2ecc71',
+                borderColor: '#27ae60',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#DDE6ED' },
+                    grid: { color: '#526D82' }
+                },
+                x: {
+                    ticks: { color: '#DDE6ED' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#DDE6ED' } }
+            }
+        }
+    });
+}
+
+function updateCourseSummary() {
+    const summaryDiv = document.getElementById('course-summary');
+    summaryDiv.innerHTML = '';
+    courses.forEach(course => {
+        if (course !== 'Tidak ada jadwal') {
+            const count = attendanceData.filter(data => data.course_name === course).length;
+            const p = document.createElement('p');
+            p.textContent = `${course}: ${count} Hadir`;
+            summaryDiv.appendChild(p);
+        }
+    });
+}
+
+function updateRecentLogs() {
+    const logsDiv = document.getElementById('recent-logs');
+    logsDiv.innerHTML = '';
+    const recent = attendanceData.slice(0, 5).map(data => 
+        `${data.full_name} - ${new Date(data.attendance_time).toLocaleString()} (${data.course_name})`
+    ).reverse();
+    recent.forEach(log => {
+        const p = document.createElement('p');
+        p.textContent = log;
+        logsDiv.appendChild(p);
+    });
+}
+
+function publishCommand(topic, message) {
+    mqttClient.publish(topic, message);
+    logMessage(`Perintah dikirim - Topic: ${topic}, Pesan: ${message}`);
+}
+
+function sendOledMessage() {
+    const message = document.getElementById('oled-message').value;
+    if (message) {
+        publishCommand('lintas_alam/oled', message);
+        document.getElementById('oled-message').value = '';
+    } else {
+        logMessage('Masukkan pesan untuk OLED terlebih dahulu!');
     }
 }
 
-async function uploadImage() {
-    const studentName = document.querySelector('#studentName').value;
-    const fileInput = document.querySelector('#imageUpload');
-    const file = fileInput.files[0];
+function saveCourseSchedule() {
+    const course = document.getElementById('course-name').value;
+    const date = document.getElementById('course-date').value;
+    const start = document.getElementById('course-start').value;
+    const end = document.getElementById('course-end').value;
+    if (course && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { course, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal mata kuliah!');
+    }
+}
 
-    if (!studentName || !file) {
-        alert('Silakan pilih siswa dan file gambar');
+function deleteCourseSchedule() {
+    publishCommand('lintas_alam/schedule', JSON.stringify({ course: 'delete' }));
+    logMessage('Jadwal mata kuliah dihapus');
+}
+
+function saveIndividualSchedule() {
+    const person = document.getElementById('person-name').value;
+    const date = document.getElementById('person-date').value;
+    const start = document.getElementById('person-start').value;
+    const end = document.getElementById('person-end').value;
+    if (person && date && start && end) {
+        const startDateTime = `${date} ${start}:00`;
+        const endDateTime = `${date} ${end}:00`;
+        const payload = { person, start: startDateTime, end: endDateTime };
+        publishCommand('lintas_alam/schedule', JSON.stringify(payload));
+    } else {
+        logMessage('Lengkapi semua field jadwal perorangan!');
+    }
+}
+
+function deleteIndividualSchedule() {
+    const person = document.getElementById('delete-person-name').value;
+    if (person) {
+        publishCommand('lintas_alam/schedule', JSON.stringify({ person: 'delete', name: person }));
+        logMessage(`Jadwal perorangan untuk ${person} dihapus`);
+    } else {
+        logMessage('Pilih nama untuk menghapus jadwal perorangan!');
+    }
+}
+
+function uploadDataset() {
+    const studentName = document.getElementById('student-name').value;
+    const files = document.getElementById('dataset-files').files;
+    
+    if (!studentName || files.length === 0) {
+        logMessage('Pilih nama mahasiswa dan setidaknya satu gambar!');
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1];
-        const data = {
-            studentName: studentName,
-            image: base64Image,
-            fileName: file.name
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const payload = {
+                studentName: studentName,
+                image: reader.result.split(',')[1],
+                fileName: `${studentName}_${index + 1}.jpg`
+            };
+            publishCommand('lintas_alam/dataset_upload', JSON.stringify(payload));
         };
-
-        try {
-            const response = await fetch(`${apiUrl}/save-attendance`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                alert('Gambar berhasil diunggah');
-                fileInput.value = '';
-            } else {
-                alert('Gagal mengunggah gambar');
-            }
-        } catch (error) {
-            console.error('Error mengunggah gambar:', error);
-            alert('Terjadi kesalahan saat mengunggah');
-        }
-    };
-    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+    });
+    logMessage(`Mengunggah ${files.length} gambar untuk ${studentName}`);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    fetchAttendance();
-    fetchStudents();
-    setInterval(fetchAttendance, 5000); // Perbarui tabel setiap 5 detik
+function logMessage(message) {
+    const logDiv = document.getElementById('log-messages');
+    const p = document.createElement('p');
+    p.textContent = `[${new Date().toLocaleString()}] ${message}`;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function openTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`button[onclick="openTab('${tabId}')"]`).classList.add('active');
+    if (tabId === 'dashboard') updateDashboard();
+}
+
+document.querySelector('.toggle-sidebar').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('collapsed');
+    document.querySelector('.main-content').classList.toggle('collapsed');
 });
+
+window.onload = () => {
+    fetchStudents();
+    fetchAttendance();
+};
