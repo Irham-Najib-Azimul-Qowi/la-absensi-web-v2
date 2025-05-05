@@ -122,7 +122,7 @@ h1 {
     margin: 0;
 }
 
-#status {
+#status, #db-status {
     font-size: 1em;
     color: #9DB2BF;
     font-weight: 500;
