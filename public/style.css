@@ -1,338 +1,73 @@
 body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    color: #333;
-    display: flex;
-    font-size: 15px;
-}
-
-.sidebar {
-    width: 280px;
-    background: #ffffff;
-    color: #333;
-    height: 100vh;
-    position: fixed;
-    transition: width 0.3s ease;
-    overflow-y: auto;
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar.collapsed {
-    width: 80px;
-}
-
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: 20px;
-    background: linear-gradient(135deg, #00c4b4, #007bff);
-    color: #fff;
-}
-
-.sidebar-header h2 {
-    margin: 0;
-    font-size: 1.8em;
-    font-weight: 600;
-}
-
-.sidebar.collapsed .sidebar-header h2 {
-    display: none;
-}
-
-.toggle-sidebar {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.5em;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.toggle-sidebar:hover {
-    color: #f0f4f8;
-}
-
-.sidebar nav {
-    padding: 20px 0;
-}
-
-.sidebar-button {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 15px 20px;
-    background: none;
-    border: none;
-    color: #333;
-    text-align: left;
-    font-size: 1.1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-.sidebar-button i {
-    margin-right: 12px;
-    font-size: 1.3em;
-}
-
-.sidebar.collapsed .sidebar-button span {
-    display: none;
-}
-
-.sidebar-button:hover, .sidebar-button.active {
-    background: #00c4b4;
-    color: #fff;
-}
-
-.main-content {
-    margin-left: 280px;
-    width: calc(100% - 280px);
-    padding: 30px;
-    transition: all 0.3s ease;
-}
-
-.main-content.collapsed {
-    margin-left: 80px;
-    width: calc(100% - 80px);
+    background-color: #f4f4f4;
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 800px;
     margin: 0 auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-}
-
-header {
-    text-align: center;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #007bff;
-    font-size: 2.5em;
-    font-weight: 700;
-    margin: 0;
+    text-align: center;
+    color: #333;
 }
 
-#status {
-    font-size: 1.1em;
-    color: #666;
-    font-weight: 500;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
+.section {
+    margin: 20px 0;
 }
 
 h2 {
-    color: #007bff;
-    font-size: 2em;
-    font-weight: 600;
-    border-bottom: 2px solid #00c4b4;
-    padding-bottom: 10px;
-    margin-bottom: 25px;
-}
-
-h3 {
-    color: #333;
-    font-size: 1.5em;
-    font-weight: 500;
-    margin-bottom: 15px;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.dashboard-card {
-    background: #fff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-5px);
-}
-
-.dashboard-card.total-attendance {
-    background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-    color: #fff;
-}
-
-.card-icon {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 1.8em;
-    opacity: 0.6;
-}
-
-.total-attendance p {
-    font-size: 2.5em;
-    font-weight: 700;
-    margin: 10px 0 0;
-}
-
-.attendance-trend canvas,
-.attendance-pie canvas,
-.attendance-bar canvas,
-.attendance-stacked canvas,
-.attendance-heatmap canvas,
-.attendance-donut canvas {
-    max-height: 250px;
-}
-
-.currencies-market,
-.recent-logs {
-    grid-column: span 2;
-}
-
-#course-summary,
-#recent-logs,
-#course-schedule-table,
-#individual-schedule-table {
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-#attendance-table, #log-messages {
-    max-height: 600px;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 12px;
+    color: #444;
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 5px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    color: #333;
+    margin-top: 10px;
 }
 
 th, td {
-    padding: 15px;
+    padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    border: 1px solid #ddd;
 }
 
 th {
-    background: #00c4b4;
-    color: #fff;
-    font-weight: 600;
+    background-color: #007BFF;
+    color: white;
 }
 
-.control-section, .schedule-section, .dataset-section {
-    margin: 25px 0;
-    padding: 25px;
-    background: #f9f9f9;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+tr:nth-child(even) {
+    background-color: #f9f9f9;
 }
 
-.datetime-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin: 15px 0;
+tr:hover {
+    background-color: #f1f1f1;
 }
 
-.datetime-controls input {
-    width: 200px;
-}
-
-.set-time {
-    font-size: 1.5em;
-    color: #00c4b4;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.set-time:hover {
-    color: #007bff;
+select, input[type="file"], button {
+    padding: 8px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 button {
-    padding: 12px 24px;
-    background: #00c4b4;
-    color: #fff;
+    background-color: #007BFF;
+    color: white;
     border: none;
-    border-radius: 8px;
     cursor: pointer;
-    font-weight: 500;
-    transition: background 0.3s ease;
 }
 
 button:hover {
-    background: #007bff;
-}
-
-input, select {
-    padding: 12px;
-    margin: 8px 0;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: #fff;
-    color: #333;
-    width: calc(100% - 26px);
-    max-width: 300px;
-    font-size: 1em;
-}
-
-input::placeholder, select::placeholder {
-    color: #999;
-}
-
-input[type="file"] {
-    padding: 10px 0;
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        width: 80px;
-    }
-    .sidebar-header h2 {
-        display: none;
-    }
-    .sidebar-button span {
-        display: none;
-    }
-    .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-        padding: 20px;
-    }
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-    .currencies-market, .recent-logs {
-        grid-column: span 1;
-    }
-    input, select, button {
-        width: 100%;
-        max-width: none;
-    }
-    .datetime-controls input {
-        width: 150px;
-    }
+    background-color: #0056b3;
 }
