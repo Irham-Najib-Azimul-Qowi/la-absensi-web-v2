@@ -1,175 +1,38 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Absensi Lintas Alam</title>
+    <title>Sistem Absensi Pengenalan Wajah</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>Sistem Absensi</h2>
-            <button class="toggle-sidebar"><i class="fas fa-bars"></i></button>
+    <div class="container">
+        <h1>Sistem Absensi Pengenalan Wajah</h1>
+        
+        <div class="section">
+            <h2>Data Absensi</h2>
+            <table id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>Nama</th>
+                        <th>Waktu</th>
+                        <th>Mata Kuliah</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
-        <nav>
-            <button class="sidebar-button active" onclick="openTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
-            <button class="sidebar-button" onclick="openTab('attendance')"><i class="fas fa-users"></i> Absensi</button>
-            <button class="sidebar-button" onclick="openTab('control')"><i class="fas fa-cogs"></i> Kontrol</button>
-            <button class="sidebar-button" onclick="openTab('course-schedule')"><i class="fas fa-calendar-alt"></i> Jadwal Mata Kuliah</button>
-            <button class="sidebar-button" onclick="openTab('individual-schedule')"><i class="fas fa-user-clock"></i> Jadwal Perorangan</button>
-            <button class="sidebar-button" onclick="openTab('dataset')"><i class="fas fa-upload"></i> Dataset</button>
-            <button class="sidebar-button" onclick="openTab('log')"><i class="fas fa-file-alt"></i> Log</button>
-        </nav>
-    </div>
-    <div class="main-content">
-        <div class="container">
-            <header>
-                <h1>Sistem Absensi Lintas Alam</h1>
-                <div id="status">Status MQTT: Terputus</div>
-            </header>
 
-            <!-- Tab Dashboard -->
-            <div id="dashboard" class="tab-content active">
-                <div class="dashboard-grid">
-                    <div class="dashboard-card total-attendance">
-                        <h3>Total Hadir</h3>
-                        <p id="total-attendance-value">0 Mahasiswa</p>
-                        <span class="card-icon"><i class="fas fa-users"></i></span>
-                    </div>
-                    <div class="dashboard-card attendance-trend">
-                        <h3>Tren Kehadiran</h3>
-                        <canvas id="attendanceLineChart"></canvas>
-                    </div>
-                    <div class="dashboard-card attendance-pie">
-                        <h3>Persentase Kehadiran</h3>
-                        <select id="course-select" onchange="updateCharts()">
-                            <option value="">Pilih Mata Kuliah</option>
-                        </select>
-                        <canvas id="attendancePieChart"></canvas>
-                    </div>
-                    <div class="dashboard-card attendance-bar">
-                        <h3>Kehadiran per Mata Kuliah</h3>
-                        <canvas id="attendanceBarChart"></canvas>
-                    </div>
-                    <div class="dashboard-card attendance-stacked">
-                        <h3>Kehadiran Mahasiswa per Mata Kuliah</h3>
-                        <canvas id="attendanceStackedChart"></canvas>
-                    </div>
-                    <div class="dashboard-card attendance-heatmap">
-                        <h3>Pola Kehadiran</h3>
-                        <canvas id="attendanceHeatmap"></canvas>
-                    </div>
-                    <div class="dashboard-card attendance-donut">
-                        <h3>Distribusi Status Kehadiran</h3>
-                        <canvas id="attendanceDonutChart"></canvas>
-                    </div>
-                    <div class="dashboard-card currencies-market">
-                        <h3>Ringkasan Mata Kuliah</h3>
-                        <div id="course-summary"></div>
-                    </div>
-                    <div class="dashboard-card recent-logs">
-                        <h3>Log Terkini</h3>
-                        <div id="recent-logs"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab Absensi -->
-            <div id="attendance" class="tab-content">
-                <h2>Data Absensi</h2>
-                <div id="attendance-table"></div>
-            </div>
-
-            <!-- Tab Kontrol -->
-            <div id="control" class="tab-content">
-                <h2>Kontrol Perangkat</h2>
-                <div class="control-section">
-                    <h3>Flash ESP32-CAM</h3>
-                    <button onclick="publishCommand('lintas_alam/lampu', 'ON')">Flash ON</button>
-                    <button onclick="publishCommand('lintas_alam/lampu', 'OFF')">Flash OFF</button>
-                </div>
-                <div class="control-section">
-                    <h3>Pintu Manual</h3>
-                    <button onclick="publishCommand('lintas_alam/door', 'OPEN')">Buka Pintu</button>
-                    <button onclick="publishCommand('lintas_alam/door', 'CLOSE')">Tutup Pintu</button>
-                </div>
-                <div class="control-section">
-                    <h3>OLED</h3>
-                    <input type="text" id="oled-message" placeholder="Masukkan pesan">
-                    <button onclick="sendOledMessage()">Kirim ke OLED</button>
-                </div>
-            </div>
-
-            <!-- Tab Jadwal Mata Kuliah -->
-            <div id="course-schedule" class="tab-content">
-                <h2>Jadwal Mata Kuliah</h2>
-                <div class="schedule-section">
-                    <h3>Tambah Jadwal</h3>
-                    <input type="text" id="course-name" placeholder="Nama Mata Kuliah">
-                    <div class="datetime-controls">
-                        <input type="datetime-local" id="course-datetime-start">
-                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('course-datetime-start').focus()"></i>
-                        <input type="datetime-local" id="course-datetime-end">
-                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('course-datetime-end').focus()"></i>
-                    </div>
-                    <button onclick="saveCourseSchedule()">Simpan Jadwal</button>
-                </div>
-                <div class="schedule-section">
-                    <h3>Daftar Jadwal</h3>
-                    <table id="course-schedule-table">
-                        <thead><tr><th>Mata Kuliah</th><th>Waktu Mulai</th><th>Waktu Selesai</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                    <button onclick="deleteCourseSchedule()">Hapus Semua Jadwal</button>
-                </div>
-            </div>
-
-            <!-- Tab Jadwal Perorangan -->
-            <div id="individual-schedule" class="tab-content">
-                <h2>Jadwal Perorangan</h2>
-                <div class="schedule-section">
-                    <h3>Tambah Jadwal</h3>
-                    <input type="text" id="person-name" placeholder="Nama Orang">
-                    <div class="datetime-controls">
-                        <input type="datetime-local" id="person-datetime-start">
-                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('person-datetime-start').focus()"></i>
-                        <input type="datetime-local" id="person-datetime-end">
-                        <i class="fas fa-calendar-alt set-time" onclick="document.getElementById('person-datetime-end').focus()"></i>
-                    </div>
-                    <button onclick="saveIndividualSchedule()">Simpan Jadwal</button>
-                </div>
-                <div class="schedule-section">
-                    <h3>Daftar Jadwal</h3>
-                    <table id="individual-schedule-table">
-                        <thead><tr><th>Nama</th><th>Waktu Mulai</th><th>Waktu Selesai</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                    <button onclick="deleteIndividualSchedule()">Hapus Semua Jadwal</button>
-                </div>
-            </div>
-
-            <!-- Tab Dataset -->
-            <div id="dataset" class="tab-content">
-                <h2>Upload Dataset</h2>
-                <div class="dataset-section">
-                    <input type="text" id="student-name" placeholder="Nama Mahasiswa">
-                    <input type="file" id="dataset-files" accept="image/*" multiple>
-                    <button onclick="uploadDataset()">Upload Dataset</button>
-                </div>
-            </div>
-
-            <!-- Tab Log -->
-            <div id="log" class="tab-content">
-                <h2>Log Aktivitas</h2>
-                <div id="log-messages"></div>
-            </div>
+        <div class="section">
+            <h2>Unggah Dataset</h2>
+            <select id="studentName"></select>
+            <input type="file" id="imageUpload" accept="image/*">
+            <button onclick="uploadImage()">Unggah</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
